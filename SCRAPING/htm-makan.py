@@ -1,4 +1,4 @@
-`import pandas as pd
+import pandas as pd
 import time
 import re
 import random
@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # ================= KONFIGURASI =================
-FILE_INPUT = 'tempat_makanV2.xlsx'
+FILE_INPUT = 'tempat-makan_empty.xlsx'
 # FILE_OUTPUT dibuat secara dinamis seperti htm-hotel.py:
 # updated_filename = f"{FILE_INPUT.replace('.xlsx', '')}_updated.xlsx"
 # ===============================================
@@ -379,9 +379,9 @@ def main_scraper():
     
     try:
         for index, row in df.iterrows():
-            # Skip jika baris ini sudah pernah diproses sebelumnya (baik Sukses maupun Gagal/Menu Tidak Terdeteksi)
-            # Ini memastikan kita langsung melanjutkan ke data berikutnya yang belum dicoba
-            if pd.notna(row['Status']) and str(row['Status']).strip() != "":
+            # Skip jika baris ini sudah sukses diproses sebelumnya (Status diawali 'Sukses')
+            # Ini memastikan kita memproses ulang data yang sebelumnya gagal/kosong
+            if pd.notna(row['Status']) and str(row['Status']).strip().startswith("Sukses"):
                 continue
                 
             keyword = str(row['Nama_Tempat'])
