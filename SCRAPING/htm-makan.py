@@ -444,23 +444,14 @@ def main_scraper():
                 
                 # Isi Kolom Standar Penyelarasan (agar sama dengan hotel & wisata)
                 df.at[index, 'Estimasi_Harga'] = data['median']
-                df.at[index, 'Sumber_Data'] = 'GoFood' if "GoFood" in status else 'GrabFood'
+                df.at[index, 'Sumber_Data'] = 'GrabFood' if "GrabFood" in status else 'GoFood'
                 df.at[index, 'Link_Sumber'] = data['link']
                 
                 success_count += 1
             else:
                 print(f"    -> GAGAL: {status}")
-                # Fallback Estimasi Cerdas
-                nama_lower = keyword.lower()
-                if any(x in nama_lower for x in ['resto', 'restoran', 'cafe', 'kafe', 'bento', 'steak', 'grill']):
-                    estimasi = 45000
-                elif any(x in nama_lower for x in ['depot', 'bakso', 'mie', 'soto', 'warung', 'lalapan', 'pecel', 'kantin', 'kedai']):
-                    estimasi = 20000
-                else:
-                    estimasi = 25000
-                print(f"       Menggunakan estimasi cerdas: Rp {estimasi:,}")
-                df.at[index, 'Estimasi_Harga'] = estimasi
-                df.at[index, 'Sumber_Data'] = 'Estimasi Cerdas'
+                df.at[index, 'Estimasi_Harga'] = 0
+                df.at[index, 'Sumber_Data'] = 'N/A'
                 df.at[index, 'Link_Sumber'] = ''
 
             # Auto Save berkala setiap 5 baris

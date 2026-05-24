@@ -215,6 +215,7 @@ def find_and_load_excel():
     agar script tetap berjalan tanpa hambatan bagi Anda.
     """
     directories_to_check = [
+        os.path.dirname(os.path.abspath(__file__)),
         "./SIMULATION/VALIDASI DATA",
         "./SCRAPING",
         "../Malang-Raya/storage/app/python",
@@ -223,9 +224,9 @@ def find_and_load_excel():
     ]
     
     files = {
-        "wisata": ["wisata.xlsx", "wisata_normalized.xlsx"],
-        "hotel": ["hotel.xlsx", "hotel_normalized.xlsx"],
-        "kuliner": ["tempat-makan.xlsx", "makan_normalized.xlsx"]
+        "wisata": ["wisataV2-htm.xlsx", "wisata.xlsx", "wisata_normalized.xlsx"],
+        "hotel": ["hotelV2-htm.xlsx", "hotel.xlsx", "hotel_normalized.xlsx"],
+        "kuliner": ["tempat_makanV2-htm.xlsx", "tempat-makan.xlsx", "makan_normalized.xlsx"]
     }
     
     loaded_data = {}
