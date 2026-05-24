@@ -1,0 +1,11 @@
+Halo! Ini adalah file pembuktian bahwa Antigravity terhubung langsung dengan VSCode Anda.
+
+Jika Anda membuka folder berikut di VSCode:
+`/Users/macbookpro/Documents/DATA BACKUPAN/piton/PROJECT_SKRIPSI/SIMULATION/EXPERIMENT MODEL`
+
+Anda akan melihat file ini (COBA_ANTIGRAVITY.txt) sudah ada di sana secara otomatis! 
+
+Sekarang, kita bisa bekerja sama:
+1. Anda bisa minta saya membuat kode Python untuk Fuzzy C-Means (FCM) atau mengedit file HTML/JS.
+2. Saya akan menulis kodenya secara langsung ke folder Anda.
+3. Anda tinggal melihat, menguji, dan menjalankannya di VSCode!

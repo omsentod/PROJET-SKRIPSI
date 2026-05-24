@@ -1,0 +1,2679 @@
+PROPOSAL SKRIPSI 
+ 
+IMPLEMENTASI METODE FUZZY C-MEANS 
+PADA SISTEM REKOMENDASI PAKET WISATA 
+DI MALANG RAYA BERDASARKAN 
+PENGANGGARAN BIAYA 
+ 
+ 
+ 
+ 
+Oleh:  
+RIFQI  WIDYADANA  
+NIM 434221048  
+ 
+ 
+PROGRAM  STUDI  D-IV TEKNIK INFORMATIKA  
+DEPARTEMEN TEKNIK 
+FAKULTAS  VOKASI  
+UNIVERSITAS  AIRLANGGA  
+2026 
+ 
+
+--- PAGE BREAK ---
+ 
+ i 
+IMPLEMENTASI METODE FUZZY C-MEANS PADA SISTEM REKOMENDASI 
+PAKET WISATA DI MALANG RAYA BERDASARKAN PENGANGGARAN 
+BIAYA 
+ 
+PROPOSAL SKRIPSI 
+ 
+Sebagai Salah Satu Syarat untuk Memperoleh 
+Gelar Sarjana Terapan Komputer Bidang Teknik Informatika pada Fakultas 
+Vokasi 
+Universitas Airlangga 
+ 
+ 
+RIFQI  WIDYADANA  
+NIM 434221048  
+ 
+ 
+ 
+Disetujui oleh:  
+Dosen Pembimbing 
+ 
+ 
+ 
+Rachman Sinatriya Marjianto B.Eng., M.Sc 
+NIP .198409182015043101 
+--- PAGE BREAK ---
+    
+ 
+ 
+ii 
+KATA PENGANTAR 
+ 
+Puji syukur Penulis panjatkan ke hadirat Tuhan Yang Maha Esa atas limpahan 
+rahmat-Nya, sehingga proposal skripsi berjudul “Implementasi Metode Fuzzy C -Means 
+Pada Sistem Rekomendasi Pada Paket Wisata Di Malang Raya Berdasarkan Penganggaran 
+Biaya” ini dapat Penulis selesaikan dengan baik. Proposal ini disusun sebagai salah satu 
+syarat untuk memperoleh gelar Sarjana Terapan di Fakultas Vokasi, Universitas Airlangga. 
+Penyelesaian proposal ini tidak terlepas dari dukungan berbagai pihak. Oleh karena 
+itu, Penulis mengucapkan terima kasih kepada: 
+1. Rachman Sinatriya Marjianto B.Eng., M.Sc, selaku dosen pembimbing utama. 
+2. Prof. Dian Yulie Reindrawati, S.Sos., MM, PhD., selaku Dekan Fakultas Vokasi 
+Universitas Airlangga, atas fasilitas yang diberikan. 
+3. Tesa Eranti Putri, S.Kom, M.Kom., selaku Ketua Program Studi D-IV Teknik 
+Informatika, atas dukungan akademik dan administrasi. 
+4. Kedua orang tua tercinta, atas doa dan dukungan tanpa henti. 
+5. Teman-teman dan semua pihak yang telah membantu proses penelitian dan 
+penyusunan skripsi ini. 
+Penulis menyadari proposal ini masih jauh dari sempurna, sehingga kritik dan saran 
+yang membangun sangat kami harapkan. Semoga karya ini bermanfaat bagi pengembangan 
+ilmu pengetahuan. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- PAGE BREAK ---
+    
+ 
+ 
+iii 
+DAFTAR ISI 
+ 
+ 
+KATA PENGANTAR ........................................................................................................... ii 
+DAFTAR TABEL ................................................................................................................. v 
+DAFTAR GAMBAR ............................................................................................................ vi 
+BAB I PENDAHULUAN ................................................................................................. 1 
+1.1 Latar Belakang ....................................................................................................... 1 
+1.2 Rumusan Masalah.................................................................................................. 4 
+1.3 Tujuan Penelitian ................................................................................................... 4 
+1.4 Manfaat Penelitian ................................................................................................. 5 
+1.5 Batasan Masalah .................................................................................................... 6 
+BAB II TINJAUAN PUSTAKA ........................................................................................ 8 
+2.1 Paket Wisata .......................................................................................................... 8 
+2.2 Kawasan Wisata Malang Raya .............................................................................. 8 
+2.3 Pengeluaran Wisatawan ......................................................................................... 9 
+2.4 Sistem Rekomendasi............................................................................................ 11 
+2.5 Algoritma Fuzzy C-Means (FCM) ...................................................................... 15 
+2.6 Google Maps Distance Matrix API ..................................................................... 14 
+2.7 Teknik Pengumpulan Data (Web Scraping) ........................................................ 12 
+2.8 Use Case Diagram ............................................................................................... 17 
+2.9 Activity Diagram ................................................................................................. 18 
+2.10 Laravel ................................................................................................................. 20 
+2.11 Python .................................................................................................................. 21 
+2.12 Selenium .............................................................................................................. 21 
+2.13 Pandas .................................................................................................................. 21 
+2.14 Scikit-Fuzzy & NumPy ....................................................................................... 21 
+--- PAGE BREAK ---
+    
+ 
+ 
+iv 
+2.15 OS & Time........................................................................................................... 22 
+2.16 Matpotlib ............................................................................................................. 22 
+2.17 Xie-Benie Index.................................................................................................... 22 
+2.18 Black Box Testing ............................................................................................... 24 
+2.19 System Usability Scale (SUS) .............................................................................. 24 
+2.20 Penelitian Terdahulu ............................................................................................ 27 
+BAB III METODE PENELITIAN .................................................................................... 31 
+3.1 Waktu dan Tempat Penelitian.............................................................................. 31 
+3.2 Alat dan Bahan Penelitian ................................................................................... 32 
+3.3 Tahapan Penelitian .............................................................................................. 35 
+DAFTAR PUSTAKA .......................................................................................................... 56 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- PAGE BREAK ---
+    
+ 
+ 
+v 
+DAFTAR TABEL 
+ 
+Tabel II.1 Proporsi Komponen Pengeluaran Wisatawan ..................................... 10 
+Tabel II.2 Simbol use case diagram ..................................................................... 17 
+Tabel II.3 Simbol Activity Diagram ..................................................................... 19 
+Tabel II.4 Ilustrasi Instrumen Kuisoner SUS (Sumber: Hidayat et al., 2023)...... 25 
+Tabel II.5 Penelitian Terdahulu ............................................................................ 27 
+Tabel III.1 Waktu Penelitian ................................................................................ 31 
+Tabel III.2 Spesifikasi Perangkat Keras ............................................................... 32 
+Tabel III.3 Spesifikasi Perangkat Lunak .............................................................. 32 
+Tabel III.4 Variabel Data Penelitian .................................................................... 35 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+--- PAGE BREAK ---
+    
+ 
+ 
+vi 
+DAFTAR GAMBAR 
+ 
+Gambar 2.1 Ilustrasi Struktur Elemen HTML pada Website (Sumber: Rizquina & 
+Ratnasari, 2023) ..................................................................................................... 13 
+Gambar 2.2 Grafik Kategori Penilaian Skor SUS................................................ 26 
+Gambar 3.1 Tahapan Penelitian ........................................................................... 36 
+ 
+--- PAGE BREAK ---
+ 
+ 1 
+BAB I  
+PENDAHULUAN 
+ 
+1.1 Latar Belakang 
+Aktivitas wisata kini telah bergeser menjadi kebutuhan vital untuk menjaga 
+kesehatan mental, khususnya bagi masyarakat yang rentan mengalami stres akibat rutinitas 
+sehari-hari. Konsep healing melalui perjalanan ke destinasi wisata yang tenang terbukti 
+ampuh dalam memulihkan kondisi emosional dan memberikan rasa relaksasi melalui 
+interaksi langsung dengan lingkungan  (Sekar Ayu, 2025). Tak hanya berdampak pada 
+individu, pariwisata juga menjadi roda penggerak ekonomi yang nyata. Sektor ini membuka 
+lapangan kerja baru dan sekaligus mendorong angka pendapatan masyarakat lokal di sekitar 
+objek wisata (Oktaviani & Yuliani, 2023). Dengan demikian, aktivitas wisata tidak hanya 
+berdampak pada pemulihan mental wisatawan, tetapi juga memberikan kontribusi ekonomi 
+riil bagi penduduk setempat melalui interaksi langsung dengan UMKM lokal dan sektor jasa  
+pariwisata (Godovykh et al., 2025). Namun, untuk memaksimalkan manfaat tersebut, 
+wisatawan membutuhkan alat bantu yang memudahkan perencanaan perjalanan khususnya 
+dalam mengelola anggaran biaya secara efektif. 
+Kawasan Malang Raya di Jawa Timur kini telah menjelma menjadi magnet wisata 
+yang menarik perhatian domestik maupun mancanegara. Meningkatnya minat wisata terlihat 
+jelas dari jumlah kunjungan wisatawan pada tahun 2024, yang mencapai 949.681 orang pada 
+Oktober 2025 (BPS Kota Malang, 2025). Wilayah Malang Raya, yang meliputi Kota 
+Malang, Kabupaten Malang, dan Kota Batu, memiliki kekayaan objek wisata yang beragam 
+dan dapat diandalkan sebagai destinasi pariwisata unggulan dengan peluang pengembangan 
+yang besar di masa mendatang (Utama et al., 2024). Keragaman daya tarik wisata di kawasan 
+ini mencakup wisata alam, budaya, sejarah, belanja, dan wisata buatan, dengan jarak tempuh 
+antar wilayah yang relatif dekat sehingga memungkinkan wisatawan menyusun paket 
+perjalanan multi -destinasi dalam satu trip.  Namun, membludaknya arus wisatawan ini 
+memunculkan masalah baru berupa information overload; banyaknya pilihan destinasi justru 
+seringkali membuat wisatawan bingung. Di tengah ledakan informasi tersebut, wisatawan 
+menghadapi kesulitan utama dalam menyelaraskan keinginan berwisata dengan keterbatasan 
+dana (budget constraint). Lu (2022) menegaskan bahwa faktor harga ( price) tetap menjadi 
+--- PAGE BREAK ---
+    
+ 
+2 
+salah satu elemen paling krusial yang mempengaruhi nilai informasi bagi wisatawan, selain 
+lokasi dan rute transportasi. Tanpa informasi biaya yang terstruktur, wisatawan rentan 
+mengalami kesalahan perencanaan. 
+Urgensi faktor biaya dalam perencanaan perjalanan ini sejalan dengan temuan 
+Sutjiadi dkk. (2018), yang menempatkan "Total Budget" sebagai kriteria input utama dalam 
+sistem rekomendasi pariwisata di Surabaya. Pendekatan ini terbukti efektif membantu 
+wisatawan, khususnya budget travelers , dalam meminimalkan pengeluaran tanpa 
+mengurangi kenyamanan berwisata. Namun, tantangan yang muncul adalah bagaimana 
+memetakan variasi biaya tersebut dengan presisi, mengingat komponen biaya wisata 
+seringkali tersebar dan tid ak seragam. Tanpa alat bantu yang tepat, risiko pembengkakan 
+anggaran (overbudget) atau pengalaman liburan yang kurang memuaskan menjadi sangat 
+tinggi. 
+Untuk meminimalkan risiko tersebut, konsep 'paket wisata' menjadi solusi yang 
+relevan karena memungkinkan wisatawan untuk mendapatkan estimasi biaya secara 
+komprehensif yang mencakup akomodasi, destinasi, dan kuliner dalam satu bundel 
+informasi yang terstruktur. Piya et al. (2023) menegaskan bahwa personalisasi paket wisata 
+(personalized tourism package) yang mempertimbangkan preferensi individual dan batasan 
+anggaran wisatawan mampu meningkatkan kepuasan perjalanan secara signifikan, 
+dibandingkan dengan pa ket wisata generik yang tidak mempertimbangkan kebutuhan 
+spesifik setiap wisatawan. Namun, tantangan utamanya adalah bagaimana menyusun paket-
+paket tersebut agar dapat disesuaikan secara dinamis dengan preferensi budget setiap 
+wisatawan. 
+Masalah perencanaan anggaran ini terutama dirasakan oleh wisatawan individual 
+(independent travelers) yang merencanakan perjalanan secara mandiri tanpa bantuan travel 
+agent. Berbeda dengan paket wisata terorganisir yang sudah tersusun lengkap dengan harga 
+pasti, wisatawan individual harus menyusun sendiri itinerary, memilih akomodasi, tempat 
+makan, transportasi, dan objek wisata yang sesuai dengan anggaran mereka. Tanpa alat 
+bantu yang tepat, proses perencanaan ini tidak hanya memakan waktu, tetapi juga ren tan 
+terhadap kesalahan estimasi  biaya yang dapat mengganggu kenyamanan perjalanan 
+(Sutjiadi et al., 2018). 
+Platform pemesanan perjalanan online seperti Traveloka, Tiket.com, Agoda, dan 
+Booking.com memang telah memudahkan wisatawan dalam mencari informasi harga 
+akomodasi, tiket pesawat, atau objek wisata. Namun, berdasarkan observasi pada fitur yang 
+tersedia (Januari 2026), platform -platform tersebut  cenderung menyajikan hasil pencarian 
+--- PAGE BREAK ---
+    
+ 
+3 
+secara terpisah per kategori, sehingga wisatawan tetap harus melakukan pencarian manual 
+untuk setiap komponen perjalanan . Namun, platform -platform tersebut umumnya  tidak 
+menyediakan fitur rekomendasi paket wisata terintegrasi  yang memperhitungkan total 
+anggaran pengguna secara komprehensif. Wisatawan tetap harus melakukan pencarian 
+manual untuk setiap komponen perjalanan (hotel, restoran, objek wisata, transportasi lokal) 
+secara terpisah, lalu menghitung sendiri apakah total biaya sesuai dengan budget yang 
+dimiliki. Proses trial -and-error ini tidak hanya memakan waktu, tetapi juga rentan 
+menghasilkan kombinasi paket yang tidak optimal baik dari segi biaya maupun pengalaman 
+wisata (Sutjiadi et al., 2018). Oleh karena itu, diperlukan sebuah sistem yang 
+mampu mengotomasi proses penyusunan paket wisata  berdasarkan budget breakdown , 
+sehingga wisatawan dapat langsung mendapatkan rekomendasi yang sesuai tanpa perlu 
+melakukan pencarian berulang. 
+Untuk mengatasi masalah tersebut, pengembangan sistem rekomendasi umumnya 
+mengandalkan metode seperti Content-Based Filtering  atau Collaborative Filtering . 
+Namun, seperti dijelaskan oleh Lu (2022), penerapan algoritma rekomendasi konvensional 
+seringkali menghadapi kendala dalam akurasi karena keterbatasan faktor fitur pariwisata 
+yang diolah. Collaborative Filtering  cenderung hanya berfokus pada prediksi minat 
+berdasarkan pola rating historis pengguna lain, namun sering mengabaikan kendala finansial 
+spesifik pengguna saat ini. Sementara itu, Content-Based Filtering  bekerja dengan 
+mencocokkan profil minat pengguna dengan karakteristik tempat wisata. Kelemahannya, 
+pendekatan ini cenderung memperlakukan atribut harga secara kaku sebagai metadata 
+semata, sehingga sulit diterapkan dalam menyusun paket wisata yang membutu hkan 
+fleksibilitas alokasi dana antar komponen (tiket wisata, akomodasi, konsumsi,transportasi). 
+Oleh karena itu, pendekatan berbasis klastering dianggap lebih tepat untuk 
+mengelompokkan paket wisata berdasarkan  total anggaran yang mencakup empat 
+komponen utama: harga tiket wisata, akomodasi (hotel), kuliner, dan transportasi  (Sutjiadi 
+et al., 2018). Namun, metode klastering konvensional seperti K-Means memiliki kelemahan 
+akurasi karena sifatnya yang kaku (hard clustering). Pada  K-Means, sebuah paket wisata 
+dikelompokkan ke dalam satu kategori harga secara mutlak, sehingga seringkali gagal 
+menangkap nuansa data harga yang dinamis. Untuk mengatasi kekakuan tersebut, algoritma 
+Fuzzy C-Means (FCM) diterapkan karena kemampuannya memetakan data dengan logika 
+samar (fuzzy). Efektivitas algoritma ini dalam menghasilkan rekomendasi yang lebih presisi 
+telah dibuktikan oleh Rahmanita dkk. (2025) , yang menerapkan FCM untuk memetakan 
+destinasi wisata di Madura berdasarkan atribut harga tiket,  akomodasi, fasilitas, jumlah 
+--- PAGE BREAK ---
+    
+ 
+4 
+pengunjung, rating, dan jarak  wisata terdekat dengan pusat kota . Penelitian tersebut 
+menunjukkan bahwa FCM mampu menghasilkan struktur klaster yang lebih kompak dan 
+akurat dibandingkan metode konvensional, sehingga sangat efektif untuk menangani data 
+pariwisata yang memiliki karakteristik ganda atau ambigu. 
+Meskipun penelitian Rahmanita dkk. (2025) berhasil membuktikan efektivitas FCM 
+dalam pengelompokan wisata, fokus utamanya lebih diarahkan pada analisis kebijakan 
+pengembangan wilayah ( regional development planning ) dan strategi promosi daerah. 
+Klastering yang dilakukan bertujuan untuk melihat pola distribusi destinasi secara makro, 
+bukan secara spesifik untuk personalisasi rekomendasi penganggaran wisatawan per 
+individu. Oleh karena itu, penelitian ini hadir untuk mengisi celah tersebut dengan 
+mengadaptasi kekuatan FCM ke dalam sistem rekomendasi yang berfokus pada  eksplorasi 
+budget breakdown. Sistem ini dirancang untuk tidak hanya melihat harga tiket semata, tetapi 
+juga mengintegrasikan estimasi biaya makan, akomodasi, dan transportasi guna menyajikan 
+paket wisata yang komprehensif dan sesuai dengan kemampuan finansial pengguna. 
+ 
+1.2 Rumusan Masalah 
+Adapun rumusan masalah yang menjadi fokus utama penelitian yakni: 
+1. Bagaimana mengimplementasikan algoritma Fuzzy C -Means (FCM) untuk 
+mengklasifikasikan paket wisata  berdasarkan komponen budget 
+breakdown (tiket, akomodasi, kuliner, transportasi) di kawasan Malang Raya? 
+ 
+2. Bagaimana membangun sistem rekomendasi paket wisata berbasis web yang 
+dapat memberikan saran paket sesuai dengan batasan anggaran (budget 
+constraint) pengguna? 
+ 
+3. Bagaimana mengevaluasi kinerja sistem rekomendasi paket wisata berbasis 
+algoritma Fuzzy C -Means (FCM) dalam hal akurasi clustering dan kepuasan 
+pengguna ? 
+ 
+1.3 Tujuan Penelitian 
+Tujuan dari penelitian ini adalah sebagai berikut: 
+ 
+--- PAGE BREAK ---
+    
+ 
+5 
+1. Menerapkan algoritma Fuzzy C -Means (FCM) untuk mengklasifikasikan paket 
+wisata berdasarkan komponen budget breakdown  (tiket, akomodasi, kuliner, 
+transportasi) di kawasan Malang Raya. 
+ 
+2. Membangun aplikasi sistem rekomendasi paket wisata berbasis web yang mampu 
+memberikan rekomendasi paket wisata sesuai dengan batasan anggaran 
+pengguna. 
+ 
+3. Mengevaluasi kinerja sistem rekomendasi paket wisata berbasis algoritma Fuzzy 
+C-Means (FCM) menggunakan metrik validitas kluster Xie-Beni Index  serta 
+pengujian kepuasan pengguna (System Usability Scale - SUS), untuk memastikan 
+sistem menghasilkan rekomendasi yang akurat dan memenuhi kebutuhan 
+wisatawan. 
+ 
+1.4 Manfaat Penelitian 
+Berdasarkan tujuan penelitian yang hendak dicapai, penelitian ini diharapkan dapat 
+memberikan manfaat baik secara langsung maupun tidak langsung dalam berbagai aspek. 
+Adapun manfaat penelitian ini adalah sebagai berikut: 
+1. Manfaat Teoritis 
+a. Bagi Peneliti dan Akademisi 
+Penelitian ini berkontribusi pada pengembangan ilmu komputer khususnya 
+dalam penerapan algoritma Soft Clustering (Fuzzy C-Means) untuk menangani 
+data yang bersifat samar ( fuzzy). Kontribusi utamanya terletak pada 
+implementasi FCM untuk profiling anggaran biaya (budget breakdown) yang 
+memecah komponen biaya wisata (tiket, akomodasi, konsumsi , dan 
+transportasi). Penelitian ini diharapkan dapat menjadi referensi bagi studi 
+selanjutnya yang ingin mengembangkan sistem rekomendasi yang berfokus 
+pada kendala biaya (budget constraint) de lebih kompleks. 
+ 
+b. Bagi Pengembangan Teknologi dan Sistem Informasi 
+Penelitian ini menunjukkan bagaimana teknologi kecerdasan buatan (Artificial 
+Intelligence) dapat diadaptasi untuk memecahkan masalah kelebihan informasi 
+(information overload ) dalam pariwisata. Secara spesifik, penelitian ini 
+memberikan contoh penerapan teknologi untuk personalisasi perencanaan 
+--- PAGE BREAK ---
+    
+ 
+6 
+perjalanan yang tidak hanya berorientasi pada lokasi, tetapi juga presisi pada 
+struktur finansial pengguna. 
+ 
+2. Manfaat Praktis 
+a. Bagi Wisatawan (Calon Pengunjung) 
+Penelitian ini memudahkan wisatawan dalam menyusun rencana liburan di 
+Malang Raya tanpa perlu melakukan riset harga manual yang memakan waktu. 
+Dengan sistem berbasis Fuzzy C -Means, wisatawan bisa mendapatkan 
+rekomendasi paket yang proporsional dengan kemampuan finansialnya, sistem  
+dapat menyarankan kombinasi hotel, tempat makan, objek wisata , dan 
+transportasi yang paling optimal sesuai total anggaran yang dimiliki, sehingga 
+meminimalkan risiko overbudget. 
+b. Bagi Pengelola Pariwisata dan Pemerintah Daerah 
+Penelitian ini dapat menjadi referensi strategis bagi Dinas Pariwisata maupun 
+pengelola objek wisata untuk memahami pola pengeluaran wisatawan. Dengan 
+mengetahui segmentasi pasar berdasarkan klaster budget (misalnya: segmen 
+"Hemat Tiket tapi Boros Makan" vs "Hotel Mewah tapi Wisata Alam"), 
+pengelola dapat merancang paket promosi yang lebih tepat sasaran, yang pada 
+akhirnya mendukung pemerataan ekonomi pariwisata di wilayah Malang Raya. 
+ 
+c. Bagi Masyarakat Luas 
+Implementasi sistem ini diharapkan dapat meningkatkan kenyamanan dan 
+kepuasan wisatawan, yang berdampak positif pada peningkatan arus 
+kunjungan ke berbagai destinasi, termasuk UMKM kuliner dan penginapan 
+lokal. Selain itu, solusi ini membantu masyarakat me nikmati aktivitas wisata 
+sebagai sarana pemulihan mental, karena aspek finansial perjalanan telah 
+terencana dengan matang. 
+ 
+1.5 Batasan Masalah 
+Penelitian ini memiliki beberapa batasan yang ditetapkan untuk memperjelas ruang 
+lingkup dan fokus penelitian. Batasan masalah dalam penelitian ini adalah sebagai berikut:  
+ 
+ 
+ 
+--- PAGE BREAK ---
+    
+ 
+7 
+1. Kriteria Penelitian 
+Penelitian ini hanya mempertimbangkan kriteria-kriteria berikut dalam penentuan 
+rekomendasi paket pariwisata yang akan diolah oleh sistem: 
+a. Kategori wisata (wisata alam, budaya, kuliner, dll).  
+b. Estimasi harga tiket masuk objek wisata.  
+c. Estimasi harga akomodasi (hotel/penginapan).  
+d. Estimasi harga kuliner (tempat makan).  
+e. Estimasi biaya transportasi dan jarak antar lokasi; dihitung berdasarkan jarak 
+tempuh riil (driving distance) dari  Google Maps Distance Matrix API  yang 
+dikonversi menggunakan acuan tarif layanan transportasi online roda empat 
+(Gojek/Gocar). Variabel yang digunakan sebagai input utama algoritma Fuzzy 
+C-Means (FCM) adalah  empat komponen budget breakdown (harga tiket 
+wisata, akomodasi, kuliner, dan transportasi). 
+f. Lokasi geografis (koordinat latitude/longitude). 
+ 
+2. Sumber Data 
+Sumber data yang digunakan dalam penelitian ini terbagi menjadi dua kategori: 
+a. Data Objek Wisata dan Akomodasi 
+Data sekunder yang meliputi nama tempat, kategori, estimasi harga 
+tiket/kamar, dan titik koordinat (latitude/longitude) diperoleh melalui 
+teknik Automated Web Scraping  pada platform  Google Maps. Proses ini 
+dilakukan dengan kata kunci pencarian spesifik ('tempat wisata', 'hotel', 'tempat 
+makan') pada periode Januari 2026 menggunakan bahasa pemrograman 
+Python. 
+ 
+b. Data Mobilitas 
+Data jarak tempuh antar lokasi diperoleh 
+secara realtime menggunakan Google Maps Distance Matrix API , yang 
+kemudian dikonversi menjadi data biaya transportasi berdasarkan parameter 
+tarif layanan Gojek/Gocar di wilayah Malang Raya.
+--- PAGE BREAK ---
+ 
+ 8 
+BAB II  
+TINJAUAN PUSTAKA 
+ 
+ 
+2.1 Paket Wisata 
+Paket wisata didefinisikan sebagai kombinasi dari dua atau lebih elemen perjalanan, 
+seperti transportasi, akomodasi, makanan, dan layanan wisata lainnya, yang dijual sebagai 
+satu produk tunggal dengan harga total yang ditentukan sebelumnya. Dalam konteks industri 
+pariwisata modern, paket wisata berfungsi untuk menyederhanakan proses pengambilan 
+keputusan wisatawan yang seringkali dihadapkan pada kompleksitas informasi destinasi. 
+Piya et al. (2023) dalam penelitiannya mengenai  Optimized Personalized Tourism 
+Packages (OPTP) menjelaskan bahwa pendekatan paket wisata konvensional seringkali 
+bersifat kaku ( one-size-fits-all), yang mungkin tidak sesuai dengan preferensi unik setiap 
+individu. Oleh karena itu, konsep  personalized tourism package  menjadi sangat krusial. 
+Personalisasi ini memungkinkan wisatawan untuk menentukan batasan anggaran ( budget 
+cap), durasi waktu, dan preferensi aktivitas mereka sendiri. Piya et al. (2023) menemukan 
+bahwa model optimasi yang mempertimbangkan  multi-objective—seperti meminimalkan 
+biaya sekaligus memaksimalkan kepuasan —menghasilkan pengalaman wisata yang jauh 
+lebih efektif dibandingkan paket standar. 
+Dalam penelitian ini, konsep paket wisata diadopsi bukan sebagai produk statis yang 
+dijual biro perjalanan, melainkan sebagai  bundling rekomendasi cerdas yang disusun oleh 
+sistem berdasarkan profil anggaran pengguna. Paket ini mengintegrasikan komponen tiket 
+wisata, biaya akomodasi, biaya konsumsi, dan estimasi transportasi menjadi satu kesatuan 
+informasi yang utuh. 
+ 
+2.2 Kawasan Wisata Malang Raya 
+Kawasan Malang Raya merupakan destinasi wisata strategis di Provinsi Jawa Timur 
+yang terbentuk dari kesatuan geografis dan kultural tiga wilayah administratif: Kota Malang, 
+Kabupaten Malang, dan Kota Batu. Sebagaimana dijelaskan oleh Utama et al. (2024), 
+integrasi ketiga wilayah ini menciptakan ekosistem pariwisata yang sangat beragam dan 
+saling melengkapi. 
+Kota Malang dikenal sebagai pusat wisata sejarah ( heritage), kuliner, dan 
+pendidikan, dengan julukan  Paris van Oost Java . Kabupaten Malang menawarkan 
+--- PAGE BREAK ---
+ 
+ 
+9 
+keindahan wisata alam yang luas, mulai dari deretan pantai selatan hingga pegunungan 
+Bromo-Tengger-Semeru. Sementara itu, Kota Batu telah berkembang pesat sebagai sentra 
+wisata buatan dan taman rekreasi modern (Jatim Park Group) serta agrowisata. Utama et al. 
+(2024) menekankan bahwa potensi pengembangan pariwisata di Malang Raya sangat besar, 
+namun tantangan utamanya adalah penyebaran informasi yang merata agar wisatawan tidak 
+hanya terkonsentrasi di satu titik saja. Melalui sistem rekomendasi yang terinteg rasi, 
+wisatawan dapat mengeksplorasi paket perjalanan lintas wilayah (misalnya: menginap di 
+Batu, berwisata alam di Kabupaten Malang, dan berkuliner di Kota Malang) dengan estimasi 
+biaya yang terukur. 
+ 
+2.3 Pengeluaran Wisatawan 
+Pemahaman mengenai struktur pengeluaran wisatawan ( tourism expenditure ) 
+merupakan elemen fundamental dalam perancangan sistem rekomendasi wisata berbasis 
+anggaran. Marigallang et al. (2024) mendefinisikan pengeluaran wisatawan sebagai total 
+biaya yang dikeluarkan pengunjung selama melakukan perjalanan wisata untuk memperoleh 
+barang dan jasa di destinasi tujuan. 
+Dalam penelitiannya mengenai pemetaan pengeluaran wisatawan menggunakan 
+metode K-Means Clustering  di kawasan wisata Toraja, Marigallang et al. (2024) 
+mengidentifikasi 11 indikator pengeluaran spesifik yang membentuk total biaya perjalanan. 
+Indikator-indikator tersebut meliputi pengeluaran untuk objek wisata, akomodasi, konsumsi, 
+belanja, layanan wisat a, biaya tambahan, serta lima kategori transportasi yang berbeda 
+(pesawat, bus, sewa mobil, kendaraan pribadi, dan transportasi lokal). Temuan ini 
+menegaskan b ahwa biaya wisata bersifat multi -dimensi dan tidak terpaku pada satu pos 
+pengeluaran saja. 
+Namun, untuk keperluan pembangunan sistem rekomendasi paket wisata yang 
+efisien bagi wisatawan individual di wilayah Malang Raya, penelitian ini melakukan 
+penyederhanaan dengan mengelompokkan indikator -indikator tersebut menjadi  empat 
+komponen utama. Pengelompokan ini dilakukan dengan mengadaptasi temuan Marigallang 
+et al. (2024) agar sesuai dengan konteks mobilitas antar-destinasi lokal. 
+Adapun pemetaan adaptasi komponen pengeluaran tersebut disajikan pada Tabel 2.1 
+berikut: 
+ 
+ 
+--- PAGE BREAK ---
+ 
+ 
+10 
+Tabel II. Adaptasi Komponen Pengeluaran Wisatawan  (Sumber: Diolah dari Marigallang 
+et al., 2024) 
+No. Komponen Sistem 
+Rekomendasi 
+Adaptasi dari Indikator 
+Marigallang et al. (2024) 
+Justifikasi 
+Penggunaan dalam 
+Sistem 
+1. Tiket Wisata 
+ 
+Indikator 1 (Objek Wisata) & 
+Indikator 10 (Layanan 
+Wisata) 
+Merupakan biaya 
+wajib untuk akses 
+masuk ke destinasi 
+wisata. Sistem 
+menggabungkan 
+biaya tiket dan 
+layanan dasar 
+menjadi satu 
+variabel harga tiket. 
+2. Akomodasi Indikator 2 
+(Akomodasi/Penginapan) 
+Biaya vital bagi 
+wisatawan yang 
+menginap lebih dari 
+satu hari. Riset 
+Marigallang 
+menunjukkan 
+variasi biaya yang 
+signifikan (Rp 
+117rb s.d Rp 1jt) 
+antar klaster, 
+sehingga penting 
+untuk 
+direkomendasikan 
+sesuai budget. 
+3. Kuliner 
+ 
+Indikator 8 (Konsumsi) Biaya makan dan 
+minum merupakan 
+pengeluaran rutin 
+harian yang tidak 
+bisa dihindari 
+--- PAGE BREAK ---
+ 
+ 
+11 
+(mandatory daily 
+cost). 
+4. Transportasi Indikator 7 (Transportasi 
+Lokal) & Indikator 5 (Sewa 
+Mobil) 
+Mengingat fokus 
+sistem adalah 
+perjalanan lokal di 
+dalam Malang 
+Raya, variabel 
+transportasi 
+mengadopsi konsep 
+'Transportasi 
+Lokal'. Biaya 
+dihitung secara 
+dinamis berbasis 
+jarak tempuh (real-
+time. 
+ 
+Penelitian ini membatasi ruang lingkup rekomendasi pada empat komponen utama 
+tersebut (Tiket, Akomodasi, Kuliner, Transportasi). Indikator lain seperti Belanja (Indikator 
+9) dan Biaya Tambahan (Indikator 11) tidak dimasukkan ke dalam perhitungan algoritma 
+karena berada di luar batasan fungsional sistem. 
+ 
+2.4 Sistem Rekomendasi 
+Sistem rekomendasi merupakan bagian integral dari teknologi informasi modern, 
+khususnya dalam industri pariwisata cerdas ( Smart Tourism ). Secara mendasar, sistem 
+rekomendasi didefinisikan sebagai sistem penyaringan informasi yang dirancang untuk 
+menangani masalah kelebihan informasi ( information overload ) dengan cara menyaring 
+sejumlah besar data dinamis sesuai dengan preferensi pengguna. Dalam konteks pariwisata, 
+sistem ini bertujuan untuk memberikan layanan perjalanan yang terpersonalisasi, membantu 
+wisatawan menemukan destinasi atau layanan yang paling relevan dengan minat mereka 
+tanpa harus melakukan pencarian manual yang mendalam (Lu, 2022). Algoritma yang 
+umum digunakan dalam pembangunan sistem rekomendasi meliputi Content-Based 
+Filtering dan Collaborative Filtering. 
+--- PAGE BREAK ---
+ 
+ 
+12 
+Metode Content-Based Filtering bekerja dengan prinsip pencocokan atribut antara 
+profil pengguna dan karakteristik item wisata. Sistem ini merekomendasikan destinasi yang 
+memiliki kemiripan fitur (seperti kategori lokasi, fasilitas, atau label harga) dengan destinasi 
+yang pernah disukai pengguna di masa lalu (Lu, 2022). Sementara itu, metode Collaborative 
+Filtering beroperasi berdasarkan asumsi bahwa pengguna dengan pola penilaian ( rating) 
+yang serupa di masa lalu akan memiliki preferensi yang sama di masa depan. Algoritma ini 
+memprediksi minat pengguna terhadap suatu destinasi berdasarkan riwayat penilaian dari 
+komunitas pengguna lain yang memiliki kemiripan selera (Lu, 2022). 
+Meskipun kedua metode konvensional tersebut populer, penerapannya seringkali 
+memiliki keterbatasan mendasar ketika dihadapkan pada variabel kendala yang kompleks 
+seperti penganggaran biaya ( budgeting). Lu (2022) menegaskan bahwa algoritma 
+rekomendasi tradisional seringkali menghadapi masalah akurasi yang rendah karena faktor 
+pariwisata yang dipertimbangkan terlalu tunggal atau tidak cukup lengkap ( insufficient 
+tourism factors ). Metode Collaborative Filtering , misalnya, cenderung mengabaikan 
+batasan finansial pengguna saat ini karena hanya berfokus pada kemiripan minat historis; 
+sistem bisa saja merekomendasikan hotel mewah kepada wisatawan dengan anggaran 
+terbatas hanya karena profil minatnya mirip dengan wisatawan kelas atas. Di sisi lain, 
+Content-Based Filtering  seringkali memperlakukan atribut harga sebagai label metadata 
+yang kaku, sehingga kurang fleksibel dalam menangani toleransi harga atau trade-off alokasi 
+dana antar komponen paket wisata (misalnya, menekan biaya hotel demi kuliner yang lebih 
+mahal). Kelemahan dalam menangani struktur biaya yang dinamis inilah yang mendorong 
+perlunya pendekatan alternatif berbasis klastering untuk meningkatkan presisi rekomendasi. 
+ 
+2.5 Teknik Pengumpulan Data (Web Scraping) 
+Dalam penelitian ini, data pariwisata (seperti harga tiket, harga hotel, dan lokasi) 
+diperoleh secara otomatis dari situs penyedia layanan perjalanan menggunakan teknik Web 
+Scraping. Metode ini dipilih karena terbukti mampu mengatasi kendala pengumpulan data 
+manual yang memakan waktu lama serta rentan terhadap kesalahan manusia (human error), 
+terutama saat menangani volume data yang besar. Rizquina dan Ratnasari (2023) 
+mendefinisikan web scraping sebagai teknik ekstraksi data otomatis yang bekerja dengan 
+mengirimkan permintaan ( request) ke server web, mengunduh halaman dalam format 
+HTML, dan memilah ( parsing) elemen data yang diinginkan untuk disimpan ke dalam 
+format terstruktur seperti Excel atau database. Dalam konteks penelitian pariwisata modern, 
+Nugraha et al. (2025) menegaskan bahwa teknik ini sangat efektif untuk mengumpulkan 
+--- PAGE BREAK ---
+ 
+ 
+13 
+metadata penting dari platform seperti Google Maps guna menyusun strategi bisnis yang 
+adaptif berdasarkan data real-time. 
+Keberhasilan proses ekstraksi data sangat bergantung pada pemahaman terhadap 
+struktur halaman web target. Halaman web dibangun menggunakan HyperText Markup 
+Language (HTML) yang diterjemahkan oleh browser menjadi Document Object Model  
+(DOM). Menurut Putri et al. (2021), teknik scraping bekerja dengan memanfaatkan struktur 
+pohon DOM tersebut untuk menelusuri elemen HTML berdasarkan atribut spesifik seperti 
+id, class, atau tag. Analisis struktur DOM ini krusial untuk mengidentifikasi pola 
+penempatan data yang diinginkan, sehingga algoritma dapat memilah (parsing) dan menarik 
+informasi yang relevan dengan tingkat akurasi yang tinggi (Ramadhanty & Najiyah, 2023). 
+ 
+ 
+Gambar II.1 Ilustrasi Struktur Elemen HTML pada Website (Sumber: Rizquina & 
+Ratnasari, 2023) 
+ 
+Tantangan utama dalam melakukan scraping pada situs modern seperti Google Maps 
+adalah penggunaan teknologi dinamis yang membuat data tidak langsung tersedia pada kode 
+sumber awal, melainkan dimuat melalui interaksi pengguna. Untuk mengatasi hal ini, 
+penelitian menggunakan metode Browser Automation  dengan kerangka kerja Selenium 
+WebDriver. Rizquina dan Ratnasari (2023) menjelaskan bahwa Selenium memiliki 
+keunggulan dalam mensimulasikan interaksi pengguna secara otomatis, seperti membuka 
+browser, melakukan pengguliran halaman (scrolling) untuk memuat konten tambahan (lazy 
+
+--- PAGE BREAK ---
+ 
+ 
+14 
+loading), serta menunggu elemen data muncul sepenuhnya sebelum diekstraksi. Pendekatan 
+otomasi ini memastikan bahwa seluruh data yang dimuat secara asinkron dapat ditangkap 
+secara utuh untuk disimpan ke dalam format terstruktur seperti database atau Excel (Putri et 
+al., 2021; Nugraha et al., 2025). 
+ 
+2.6 Google Maps Distance Matrix API 
+Dalam sistem rekomendasi pariwisata yang melibatkan mobilitas antar lokasi, 
+akurasi perhitungan jarak tempuh merupakan variabel kritis yang mempengaruhi estimasi 
+biaya transportasi. Penelitian ini memanfaatkan layanan Google Maps Distance Matrix API, 
+sebuah antarmuka pemrograman aplikasi yang menyediakan data jarak perjalanan dan durasi 
+tempuh berdasarkan jaringan jalan raya secara real-time. 
+Menurut dokumentasi resmi  Google Cloud  (2025), layanan Distance Matrix  
+menghitung jarak antar titik asal dan tujuan dengan mempertimbangkan infrastruktur jalan 
+dan kondisi lalu lintas, berbeda dengan metode perhitungan jarak geometris konvensional 
+seperti formula Haversine. Formula Haversine hanya mampu menghitung jarak garis lurus 
+antara dua titik koordinat di permukaan bumi, sehingga seringkali menghasilkan bias 
+estimasi yang signifikan karena tidak memperhitungkan hambatan geografis maupun rute 
+jalan yang berkelok. 
+Sebaliknya, kemampuan Distance Matrix API untuk menghasilkan data jarak mengemudi 
+memungkinkan sistem ini untuk: 
+1. Mengakses data jarak jalan raya yang presisi sesuai rute yang akan dilalui 
+wisatawan. 
+2. Menghasilkan estimasi biaya transportasi yang akurat dengan mengalikan jarak 
+tempuh riil tersebut dengan tarif per kilometer layanan transportasi online 
+(Gojek/Gocar). 
+ 
+Integrasi teknologi ini memastikan bahwa rekomendasi biaya transportasi yang 
+disajikan dalam paket wisata adalah angka yang realistis dan dapat dieksekusi, 
+meminimalkan risiko kesalahan perhitungan anggaran pada saat wisatawan merealisasikan 
+rencananya. 
+ 
+--- PAGE BREAK ---
+ 
+ 
+15 
+2.7 Algoritma Fuzzy C-Means (FCM) 
+Algoritma Fuzzy C -Means (FCM) adalah metode pengelompokan data yang 
+diperkenalkan oleh Bezdek, di mana keberadaan setiap titik data dalam suatu klaster 
+ditentukan oleh derajat keanggotaan. Berbeda dengan klastering konvensional yang bersifat 
+tegas ( hard clustering ), FCM memungkinkan data memiliki keanggotaan parsial pada 
+beberapa klaster sekaligus, sehingga lebih akurat dalam menangani data pariwisata yang 
+kompleks (Rahmanita et al., 2025).  
+Adapun tahapan proses algoritma FCM dalam penelitian ini adalah sebagai berikut: 
+1. Inisialisasi Parameter  
+Langkah pertama adalah menentukan parameter algoritma meliputi jumlah klaster 
+(𝑐), pangkat pembobot atau fuzzifier ( 𝑚 = 2), maksimum iterasi, dan nilai 
+toleransi error (ϵ).  
+Data input berupa harga tiket wisata, akomodasi, kuliner, dan estimasi biaya 
+transportasi digunakan secara langsung dalam satuan Rupiah. Penggunaan nilai 
+asli (raw values) ini dipilih untuk menjaga interpretabilitas hasil clustering dalam 
+satuan yang familiar bagi pengguna, sehingga cluster yang terbentuk dapat 
+langsung dipahami sebagai kelompok paket berdasarkan total anggaran (murah, 
+sedang, mahal). 
+ 
+2. Membangkitkan Matriks Keanggotaan Awal (U) 
+Pada iterasi pertama, matriks derajat keanggotaan (𝜇𝑖𝑘) dibangkitkan secara acak. 
+Nilai derajat keanggotaan harus memenuhi syarat kendala bahwa total 
+keanggotaan setiap data di semua klaster adalah satu: 
+∑ 𝜇𝑖𝑘 = 1
+𝑐
+𝑖=1
+ 
+(2,2) 
+ 
+Keterangan: 
+𝜇𝑖𝑘 : Derajat keanggotaan data ke-𝑖 pada klaster ke- 𝑘. 
+𝑐 : Jumlah total klaster. 
+ 
+3. Menghitung Pusat Klaster (𝑉) 
+Pusat klaster ke -𝑘 (𝑣𝑘) dihitung untuk menentukan titik tengah dari setiap 
+kelompok data berdasarkan rata-rata tertimbang: 
+--- PAGE BREAK ---
+ 
+ 
+16 
+𝑣
+𝑘=
+∑ (𝜇𝑖𝑘)𝑚𝑥𝑖
+𝑛
+𝑖=1
+∑ (𝜇𝑖𝑘)𝑚𝑛
+𝑖=1
+ 
+ 
+(2,3) 
+ 
+Keterangan: 
+𝑣𝑘: Pusat klaster ke-𝑘. 
+𝑥𝑖 : Data ke-𝑖. 
+𝑛: Jumlah total data. 
+𝑚: Pangkat pembobot (fuzzifier), 𝑚 = 2. 
+ 
+ 
+ 
+ 
+4. Menghitung Jarak Euclidean (𝑑𝑖𝑘) 
+Jarak antara setiap titik data ( 𝑥𝑖) dengan setiap pusat klaster ( 𝑣𝑘) dihitung 
+menggunakan rumus Euclidean Distance untuk mengukur tingkat kemiripan: 
+ 
+𝑑𝑖𝑘 = ∥ 𝑥𝑖 −  𝑣𝑘 ∥ (2,4) 
+Keterangan: 
+𝑑𝑖𝑘 : Jarak antara data ke-𝑖 dengan pusat klaster ke-𝑘. 
+∥ ⋯ ∥ : Notasi jarak Euclidean. 
+ 
+5. Memperbarui Matriks Keanggotaan  (𝑈) 
+Nilai derajat keanggotaan dihitung ulang ( update) pada setiap iterasi untuk 
+menyesuaikan posisi data terhadap pusat klaster yang baru terbentuk: 
+ 
+𝜇𝑖𝑘 =  1
+∑ (𝑑𝑖𝑘
+𝑑𝑖𝑗
+)
+2
+𝑚−1𝑒
+𝑗=1
+ 
+(2,5) 
+Keterangan: 
+𝜇𝑖𝑘 : Derajat keanggotaan baru data ke-𝑖 pada klaster ke-𝑘. 
+--- PAGE BREAK ---
+ 
+ 
+17 
+𝑑𝑖𝑗: Jarak antara data ke-𝑖 dengan pusat klaster lain (sebagai pembanding). 
+ 
+6. Pengecekan Fungsi Objektif (𝒥𝑚) 
+Langkah 3 sampai 5 diulang terus-menerus hingga fungsi objektif (𝒥𝑚) 
+mencapai konvergensi (stabil). Rumus fungsi objektif adalah: 
+ 
+𝒥𝑚 =  ∑ ∑ (𝜇𝑖𝑘)𝑚(𝑑𝑖𝑘)2𝑐
+𝑘=1  
+𝑛
+𝑖=1  (2,6) 
+  
+Keterangan: 
+𝒥𝑚 : Nilai fungsi objektif (total error). 
+𝑑𝑖𝑘 : Jarak antara data ke-𝑖 dengan pusat klaster ke-𝑘. 
+Algoritma akan berhenti jika selisih nilai fungsi objektif antar iterasi sudah lebih 
+kecil dari nilai toleransi error (ϵ), yaitu |𝒥𝑚 
+(𝑡)  − 𝒥𝑚 
+(𝑡−1) | < ϵ. 
+ 
+2.8 Use Case Diagram 
+Pada tahapan perancangan sistem, pemodelan interaksi fungsional direpresentasikan 
+menggunakan Use Case Diagram . Berdasarkan studi dari Rospricilia dan Ma'ady (2024), 
+Use Case Diagram  didefinisikan sebagai teknik pemodelan visual yang bertujuan untuk 
+mendokumentasikan bagaimana pengguna ( actor) berinteraksi dengan sistem yang sedang 
+dikembangkan, serta memperjelas batasan ruang lingkup sistem tersebut. Diagram ini fokus 
+menjelaskan "apa" layanan yang disediakan oleh sistem kepada pengguna tanpa memerinci 
+aspek t eknis mengenai "bagaimana" layanan tersebut diproses di latar belakang.  Berikut 
+merupakan simbol-simbol yang digunakan pada Use Case Diagram:  
+ 
+Tabel II.1 Simbol use case diagram  
+Simbol Nama Keterangan 
+ 
+ 
+Actor Digunakan untuk 
+menggambarkan sesuatu 
+atau seseorang yang 
+berinteraksi dengan 
+sistem. 
+
+--- PAGE BREAK ---
+ 
+ 
+18 
+ 
+ 
+Use Case Menjelaskan cara kerja 
+suatu sistem tanpa 
+mengungkap struktur 
+internalnya. 
+ 
+ 
+Assosiation Jalur komunikasi antar 
+actor dengan use case 
+yang saling 
+berpartisipasi. 
+ 
+<<extend>> 
+> 
+Extend Menunjukkan bahwa 
+suatu use case 
+merupakan tambahan 
+fungsional dariuse case 
+lainnya jika suatu kondisi 
+terpenuhi. 
+ Use case generalization Hubungan antara use 
+case umum dengan use 
+case yang lebih spesifik, 
+yang mewarisi dan 
+menambah fitur 
+terhadapnya. 
+ 
+ 
+<<include>> 
+ 
+Include 
+ 
+Menunjukkan bahwa 
+suatu use case 
+merupakan tambahan 
+fungsional dari use case 
+lainnya jika suatu kondisi 
+terpenuhi.  
+ 
+2.9 Activity Diagram 
+Dalam perancangan alur sistem, penelitian ini menggunakan Activity Diagram . 
+Merujuk pada Putra et al. (2022), Activity Diagram  didefinisikan sebagai diagram yang 
+menggambarkan workflow (aliran kerja) atau aktivitas dari sebuah sistem, proses bisnis, 
+--- PAGE BREAK ---
+ 
+ 
+19 
+maupun menu yang terdapat dalam perangkat lunak. Diagram ini berfungsi untuk 
+memetakan urutan aktivitas secara logis dari awal hingga akhir proses. 
+Secara spesifik dalam pengembangan sistem informasi pariwisata, Putra et al. (2022) 
+mengimplementasikan diagram ini untuk memodelkan interaksi pengguna yang krusial, 
+seperti proses pencarian data wisata yang dilakukan oleh pengunjung serta alur untuk 
+melihat detail informasi wisata. Mengadopsi pendekatan tersebut, penelitian ini 
+menggunakan Activity Diagram  untuk merinci alur kerja algoritma scraping data dan 
+mekanisme sistem dalam memberikan rekomendasi wisata. 
+Berikut adalah simbol-simbol standar yang digunakan pada Activity Diagram: 
+ 
+Tabel II.2 Simbol Activity Diagram 
+Simbol Nama Keterangan 
+ 
+ 
+ 
+Initial State (Start point) 
+Menandakan titik awal 
+aktivitas pada activity 
+diagram 
+ 
+ 
+Activity (Aktivitas) 
+ 
+Menunjukan aktivitas 
+yang sedang terjadi pada 
+activity diagram 
+ 
+ 
+Decision (Keputusan) 
+ 
+Menggambarkan pilihan 
+kondisi dimana ada 
+kemungkinan perbedaan 
+transisi. 
+ 
+ 
+Join (Penggabungan) 
+ 
+Menggabungkan 
+kembali activity yang 
+parallel. 
+ 
+
+--- PAGE BREAK ---
+ 
+ 
+20 
+ 
+Status Akhir 
+ 
+Menunjukan bagian 
+akhir dari aktivitas. 
+ 
+ 
+ 
+ 
+ 
+ 
+Swimlane 
+ 
+ 
+Swimlane memisahkan 
+organisasi bisnis yang 
+bertanggung jawab 
+terhadap aktivitas yang 
+terjadi. 
+ 
+2.10 Laravel  
+Laravel merupakan kerangka kerja (framework) berbasis bahasa pemrograman PHP 
+yang dirancang untuk mendukung pengembangan sistem informasi berbasis web secara 
+efisien dan terstruktur. Menurut Ambara dan Antarajaya (2024), framework ini dipilih dalam 
+pengembangan perangkat lunak karena menawarkan berbagai keunggulan utama, meliputi 
+kemudahan dalam proses pengembangan, jaminan keamanan sistem, serta efisiensi tinggi 
+dalam manajemen basis data. Lebih lanjut, Ambara dan Antarajaya (2024 ) menjelaskan 
+bahwa penggunaan Laravel memungkinkan pengembang untuk membangun aplikasi yang 
+terintegrasi dan memiliki performa andal dalam menyajikan informasi yang akurat kepada 
+pengguna. 
+Dalam penerapannya, Laravel mengadopsi arsitektur Model-View-Controller 
+(MVC) yang memisahkan logika aplikasi menjadi tiga komponen utama guna 
+mempermudah proses pengkodean dan pemeliharaan. Ambara dan Antarajaya (2024) 
+mendefinisikan Model sebagai komponen yang berurusan langsung dengan manipulasi data 
+pada basis data serta menangani validasi data. Sementara itu, View merupakan komponen 
+yang bertanggung jawab menangani logika presentasi atau antarmuka pengguna, 
+memastikan tampilan sistem responsif dan nyam an digunakan. Kedua komponen tersebut 
+dihubungkan oleh Controller, yang bertugas mengatur alur logika dan merespons interaksi 
+pengguna, sehingga struktur kode program tetap terorganisir seiring berkembangnya 
+kompleksitas sistem. 
+ 
+
+--- PAGE BREAK ---
+ 
+ 
+21 
+2.11 Python 
+Python adalah bahasa pemrograman tingkat tinggi yang memiliki peran sentral dalam 
+ekosistem analisis data dan pengembangan sistem cerdas. Guntara (2023) mendefinisikan 
+Python sebagai bahasa yang memungkinkan pengguna untuk melakukan pemrograman dan 
+analisis data secara efisien melalui dukungan berbagai pustaka ( library) yang kuat. Dalam 
+konteks pengolahan data, Python menyediakan fleksibilitas tinggi untuk melakukan 
+manipulasi, pembersihan, hingga visualisasi data yang kompleks, menjadikannya alat yang 
+sangat efektif dalam menangani kebutuhan komputasi modern. 
+ 
+2.12 Selenium  
+Selenium adalah pustaka standar yang digunakan untuk mengotomatisasi interaksi 
+dengan peramban web (web browser). Ramadhanty dan Najiyah (2023) menjelaskan bahwa 
+Selenium berfungsi sebagai alat kontrol otomatis yang memungkinkan program untuk 
+meniru perilaku pengguna manusia, seperti membuka halaman web, melakukan pengguliran 
+(scrolling), dan mengeklik elemen antarmuka. Pustaka ini sangat krusial dalam proses web 
+scraping, terutama untuk menangani situs web dinamis yang kontennya dimuat 
+menggunakan JavaScript, sehingga data yang tidak tersedia pada kode sumber awal tetap 
+dapat diekstraksi dengan akurat. 
+ 
+2.13 Pandas  
+Pandas adalah pustaka Python yang dirancang khusus untuk memproses, 
+menganalisis, dan memanipulasi data secara terstruktur. Menurut Guntara (2023), Pandas 
+menyediakan struktur data yang kuat, yaitu DataFrame dan Series, yang sangat berguna 
+dalam pengolahan data tabular. Kemampuan utama Pandas mencakup penggabungan data, 
+pembersihan data ( data cleaning) dari nilai yang hilang atau tidak valid, serta manipulasi 
+format data agar siap digunakan dalam tahap analisis maupun visualisasi selanjutnya. 
+ 
+2.14 Scikit-Fuzzy & NumPy 
+Pada implementasi metode Fuzzy C -Means, sistem ini menggunakan pustaka 
+eksternal Scikit-Fuzzy (skfuzzy) dan NumPy. Menurut Mutoffar et al. (2024), Scikit-Fuzzy 
+adalah koleksi algoritma logika fuzzy yang kuat untuk bahasa pemrograman Python, yang 
+dirancang khusus untuk bekerja di atas tumpukan ilmiah SciPy. Pustaka ini menyediakan 
+--- PAGE BREAK ---
+ 
+ 
+22 
+fungsi siap pakai c-means yang digunakan dalam penelitian ini untuk melakukan proses 
+clustering data pariwisata. 
+Sementara itu, NumPy (Numerical Python ) berfungsi sebagai fondasi komputasi 
+numerik yang menangani operasi matriks dan array berdimensi besar. Mutoffar et al. (2024) 
+menegaskan bahwa penggunaan NumPy sangat krusial dalam mempercepat kalkulasi 
+matematis yang kompleks, seperti perhitungan jarak Euclidean dan pembaruan matriks 
+keanggotaan dalam setiap iterasi algoritma fuzzy. 
+ 
+2.15 OS & Time 
+Pada proses web scraping, penelitian ini juga memanfaatkan pustaka standar Python, 
+yaitu Time dan OS. Rizquina dan Ratnasari (2023) menjelaskan bahwa library Time 
+merupakan modul utilitas vital yang berfungsi untuk mengatur jeda waktu eksekusi program 
+(sleep). Fungsi ini digunakan untuk menunda aktivitas scraping selama beberapa detik antar-
+halaman, memastikan bahwa elemen situs web telah dimuat sepenuhnya sebelum data 
+diambil, serta mencegah pemblokiran IP oleh server target akibat permintaan yang terlalu 
+cepat. 
+Selain itu, pustaka OS (Operating System ) digunakan untuk menangani interaksi 
+dengan sistem operasi, seperti manajemen direktori dan jalur penyimpanan file (path). Hal 
+ini memungkinkan data hasil scraping untuk disimpan secara otomatis ke dalam folder yang 
+terstruktur di komputer lokal. 
+ 
+2.16 Matpotlib 
+Matplotlib adalah pustaka visualisasi data dasar dalam ekosistem Python. Menurut 
+Guntara (2023), Matplotlib digunakan untuk membuat berbagai jenis grafik statis, animasi, 
+maupun visualisasi interaktif guna mempresentasikan data secara visual agar lebih mudah 
+dipahami. Dalam sistem ini, Matplotlib berperan dalam menyajikan grafik hasil analisis 
+ulasan atau distribusi rating wisata kepada pengguna dalam bentuk visual yang informatif. 
+ 
+2.17 Xie-Beni Index 
+Pengujian validitas klaster merupakan tahapan penting untuk mengukur kualitas 
+hasil pengelompokan. Tujuan utama dari validasi ini adalah memastikan bahwa klaster yang 
+terbentuk memenuhi kriteria kekompakan ( compactness) antar anggota dalam satu 
+kelompok dan keterpisahan (separation) antar kelompok yang berbeda. 
+--- PAGE BREAK ---
+ 
+ 
+23 
+Pada penelitian ini, metode validasi yang digunakan adalah Xie-Beni Index (XBI). 
+Metode ini dipilih karena efektif digunakan pada algoritma Fuzzy C -Means untuk 
+menentukan jumlah klaster yang optimal. Berdasarkan penelitian Al-Janabee dan Al-Sarray 
+(2022), Xie-Beni Index  didefinisikan sebagai metrik yang membagi total variansi dalam 
+klaster (σ) dengan nilai separasi minimum (𝑠𝑒𝑝). 
+Perhitungan Xie-Beni Index  dilakukan melalui tiga tahapan persamaan sebagai 
+berikut (Al-Janabee & Al-Sarray, 2022): 
+ 
+1. Menghitung Total Variansi (σ):  
+Variansi dihitung berdasarkan akumulasi jarak kuadrat antara data dengan pusat 
+klasternya, yang ditimbang oleh derajat keanggotaan: 
+σ =  ∑  
+𝑐
+𝑘=1
+∑ 𝑢𝑘𝑖
+𝑚 𝐷2
+𝑛
+𝑖=1
+(𝑥𝑖, 𝑐𝑘) (2,7) 
+2. Menghitung Separasi Minimum (𝑠𝑒𝑝) 
+Separasi ditentukan oleh jarak kuadrat minimum antara pusat -pusat klaster yang 
+berbeda: 
+𝑠𝑒𝑝 =  𝑚𝑖𝑛
+𝑘 ≠ 𝑗 𝐷2(𝑐𝑘, 𝑐𝑗)  (2,8) 
+  
+3. Menghitung Nilai Akhir Xie-Beni (𝑋𝐵): 
+Nilai indeks validitas diperoleh dari pembagian variansi dengan separasi yang 
+dikalikan jumlah data: 
+𝑋𝐵 =  𝜎 
+𝑛 𝑥 𝑠𝑒𝑝 (2,9) 
+ 
+Keterangan: 
+𝑋𝐵 : Nilai indeks validitas Xie-Beni (semakin kecil semakin baik). 
+𝜎 : Total variansi intra-klaster (compactness). 
+𝑠𝑒𝑝 : Nilai separasi minimum antar pusat klaster. 
+𝑢𝑘𝑖
+  : Derajat keanggotaan data ke-𝑖 pada klaster ke-𝑘. 
+𝐷2(𝑥𝑖, 𝑐𝑘) : Jarak kuadrat antara data 𝑥𝑖 dengan pusat klaster 𝑐𝑘  
+𝐷2(𝑐𝑘, 𝑐𝑗): Jarak kuadrat antara pusat klaster 𝑐𝑘 dan 𝑐𝑗. 
+𝑛 : Jumlah total data. 
+--- PAGE BREAK ---
+ 
+ 
+24 
+ 
+Nilai 𝜎 yang semakin kecil dan nilai 𝑠𝑒𝑝 yang semakin tinggi akan menghasilkan 
+nilai 𝑋𝐵 yang minimal. Oleh karena itu, untuk mencapai pengelompokan yang 
+tepat (proper clustering), nilai 𝑋𝐵 harus diminimalkan. 
+ 
+2.18 Black Box Testing 
+Tahap akhir dalam pengembangan sistem adalah pengujian perangkat lunak 
+(software testing) untuk menjamin kualitas aplikasi. Dalam penelitian ini, metode yang 
+digunakan adalah Black Box Testing. Metode ini didefinisikan sebagai teknik pengujian 
+yang berfoku s sepenuhnya pada spesifikasi fungsional perangkat lunak tanpa perlu 
+mengetahui struktur kode internal (internal coding) atau logika pemrograman yang 
+membangunnya. Penguji memperlakukan sistem layaknya "kotak hitam", di mana fokus 
+utama hanya tertuju pada kesesuaian antara input yang diberikan dan output yang dihasilkan 
+oleh sistem. 
+Keuntungan utama penggunaan Black Box Testing  adalah kemampuannya untuk 
+mengidentifikasi kesalahan dari sudut pandang pengguna (end-user), sehingga sangat efektif 
+untuk menemukan fungsionalitas yang tidak benar atau hilang, kesalahan antarmuka 
+(interface errors ), serta kesalahan kinerja. Sejalan dengan hal tersebut, Ambara dan 
+Antarajaya (2024) menegaskan bahwa penerapan metode ini dipilih untuk memastikan 
+bahwa sistem dapat bekerja sesuai dengan fungsionalitas yang diharapkan serta mampu 
+menyajikan informasi secara akurat sebelum diserahkan kepada pengguna akhir. 
+ 
+2.19 System Usability Scale (SUS) 
+System Usability Scale  (SUS) merupakan metode evaluasi yang digunakan untuk 
+mengukur persepsi subjektif pengguna terhadap kegunaan sistem. Dalam penelitian yang 
+dilakukan oleh Hidayat et al. (2025) , SUS digunakan untuk mengidentifikasi masalah 
+kegunaan serta memberikan rekomendasi perbaikan pada aplikasi Sidewi Mobile . Metode 
+ini memberikan penilaian kuantitatif mengenai seberapa jauh sistem dapat diterima oleh 
+pengguna melalui kuesioner yang terstruktur. 
+Instrumen SUS yang digunakan dalam penelitian ini terdiri dari 10 butir pernyataan 
+yang telah dimodifikasi agar relevan dengan konteks aplikasi Sidewi Mobile. Responden 
+diminta memberikan penilaian menggunakan skala Likert 1 sampai 5. Berikut adalah daftar 
+pernyataan kuesioner yang digunakan dalam evaluasi tersebut: 
+--- PAGE BREAK ---
+ 
+ 
+25 
+ 
+Tabel II.3 Ilustrasi Instrumen Kuisoner SUS (Sumber: Hidayat et al., 2023) 
+No Instrumen Skala 
+1 Saya ingin memanfaatkan Sidewi Mobile untuk mencari 
+informasi desa wisata.  
+1 sampai 
+dengan 5  
+2 Menurut saya aplikasi Sidewi Mobile terlalu 
+membingungkan  
+1 sampai 
+dengan 5  
+3 Aplikasi Sidewi Mobile mudah digunakan bagi saya.  1 sampai 
+dengan 5  
+4 Saya perlu adanya bantuan teknis untuk menggunakan 
+aplikasi Sidewi Mobile.  
+1 sampai 
+dengan 5  
+5 Menurut saya fitur aplikasi Sidewi Mobile sudah lengkap  1 sampai 
+dengan 5  
+6 Banyak fitur yang tidak sesuai pada aplikasi Sidewi 
+Mobile  
+1 sampai 
+dengan 5  
+7 Aplikasi Sidewi Mobile akan mudah dipelajari  1 sampai 
+dengan 5  
+8 Saya kesulitan menggunakan aplikasi Sidewi Mobile 
+untuk keperluan mencari informasi desa wisata  
+1 sampai 
+dengan 5  
+9 Saya merasa aman dengan menggunakan aplikasi Sidewi 
+Mobile  
+1 sampai 
+dengan 5  
+10 Saya harus belajar sebelum menggunakan aplikasi Sidewi 
+Mobile  
+1 sampai 
+dengan 5  
+Skor keseluruhan dari System Usability Scale (SUS) akan menghasilkan nilai akhir 
+yang berada dalam rentang antara 0 hingga 100. Nilai ini mencerminkan tingkat kegunaan 
+sebuah sistem berdasarkan persepsi pengguna. Interpretasi nilai tersebut dipetakan ke dalam 
+kategori penerimaan (Acceptability Ranges), skala huruf (Grade Scale), dan peringkat kata 
+sifat (Adjective Ratings) untuk menentukan kelayakan sistem. 
+--- PAGE BREAK ---
+ 
+ 
+26 
+ 
+Gambar II.2 Grafik Kategori Penilaian Skor SUS 
+Berdasarkan Hidayat et al. (2025), pembagian kategori penilaian berdasarkan Grade 
+Scale adalah sebagai berikut: 
+1. Grade A: Skor ≥80,3. 
+2. Grade B: Skor 74 s.d. < 80,3. 
+3. Grade C: Skor 68 s.d. < 74. 
+4. Grade D: Skor 51 s.d. < 68. 
+5. Grade F: Skor < 51. 
+Perhitungan skor akhir SUS dilakukan melalui tahapan matematis. Setiap responden 
+memberikan nilai skala 1 sampai 5. Nilai tersebut dikonversi dengan aturan: (1) Untuk 
+pertanyaan ganjil (1, 3, 5, 7, 9), skor kontribusi adalah nilai skala dikurangi 
+1(𝑋 − 1) ; (2) Untuk pertanyaan genap (2, 4, 6, 8, 10), skor kontribusi adalah 5 dikurangi 
+nilai skala (5 − 𝑋). Jumlah skor kontribusi kemudian dikalikan 2,5 untuk mendapatkan nilai 
+SUS individu . Untuk mengetahui nilai kegunaan sistem secara keseluruhan, digunakan 
+rumus rata-rata sebagai berikut: 
+𝑥̄ =  ∑𝑥
+𝑛  
+Keterangan: 
+𝑥̄ : Nilai rata-rata 
+∑𝑥: Nilai SUS (Total skor seluruh responden) 
+𝑛: Jumlah responden 
+ 
+
+--- PAGE BREAK ---
+ 
+ 
+27 
+2.20 Penelitian Terdahulu 
+Penelitian yang menggunakan metode Fuzzy C-Means Clustering  (FCM). 
+ 
+Tabel II.4 Penelitian Terdahulu 
+`No. Judul Pengaran
+g 
+Penerbit dan 
+Tahun 
+Permasalahan Hasil 
+1. Clustering 
+Madura 
+tourism 
+destination
+s using 
+Fuzzy C -
+Means and 
+Fuzzy C -
+Medoids 
+with Xie -
+Beni 
+optimizati
+on 
+ 
+Eza 
+Rahmanita
+, Yeni 
+Kustiyahni
+ngsih, 
+Mohamma
+d Faizal 
+Akbar, 
+Akhmad 
+Sulthon 
+Rabbani, 
+Rifqy 
+Alifuddin 
+Alfareza 
+ 
+EPJ Web of 
+Conferences, 
+2025 
+ 
+Diperlukan 
+metode 
+pengelompokan 
+yang optimal 
+untuk 
+memetakan 
+potensi wisata di 
+Madura guna 
+mendukung 
+strategi promosi 
+dan rekomendasi 
+yang tepat 
+sasaran. 
+ 
+ 
+Hasil 
+perbandingan 
+menunjukkan 
+bahwa metode 
+FCM efektif 
+dalam 
+mempartisi data 
+destinasi wisata. 
+Validasi 
+menggunakan 
+indeks Xie -Beni 
+menunjukkan 
+kualitas klaster 
+yang baik dan 
+optimal untuk 
+digunakan 
+dalam pemetaan 
+wisata. 
+ 
+2. Surabaya 
+Tourism 
+Destinatio
+n 
+Recomme
+ndation 
+Using 
+Fuzzy C -
+Means 
+Algorithm 
+ 
+Sutjiadi, 
+R., 
+Trianto, E. 
+M., & 
+Budihardj
+o, A. G. 
+ 
+Journal of 
+Telecommuni
+cation, 
+Electronic 
+and 
+Computer 
+Engineering 
+(JTEC), 2018 
+) 
+ 
+ 
+Wisatawan 
+sering 
+mengalami 
+kesulitan dalam 
+memilih paket 
+wisata yang 
+sesuai dengan 
+kriteria spesifik 
+di Surabaya 
+karena 
+banyaknya 
+pilihan yang 
+tersedia. 
+ 
+Hasil dari jurnal 
+menunjukkan 
+bahwa sekitar 75 
+persen 
+responden 
+merasa bahwa 
+rekomendasi 
+yang diberikan 
+oleh sistem 
+cukup akurat dan 
+sesuai dengan 
+kebutuhan 
+mereka, 
+sementara 25 
+persen lainnya 
+memberikan 
+penilaian rata -
+rata dan masih 
+membutuhkan 
+peningkatan 
+dalam akurasi 
+dan variasi data 
+--- PAGE BREAK ---
+ 
+ 
+28 
+`No. Judul Pengaran
+g 
+Penerbit dan 
+Tahun 
+Permasalahan Hasil 
+ 
+3. Fuzzy 
+clustering 
+with 
+optimizati
+on for 
+collaborati
+ve 
+filtering‐
+based 
+recommen
+der 
+systems  
+ 
+Soojung 
+Lee  
+ 
+Journal of 
+Ambient 
+Intelligence 
+and 
+Humanized 
+Computing 
+,2022 
+ 
+Scalability 
+(skalabilitas) 
+dan data sparsity 
+pada sistem 
+rekomendasi 
+berbasis 
+memori, serta 
+ketidakandalan 
+penghitungan 
+kesamaan 
+(similarity) pada 
+data yang 
+sedikit. 
+ 
+Penerapan FCM 
+yang 
+dioptimalkan 
+dengan 
+Algoritma 
+Genetika (FCM -
+GA) dan fitur 
+preferensi genre 
+berhasil 
+meningkatkan 
+akurasi prediksi 
+secara 
+signifikan. 
+FCM-GA 
+menghasilkan 
+nilai Mean 
+Absolute Error  
+(MAE) terendah 
+dan waktu 
+eksekusi 
+tercepat 
+dibandingkan 
+metode K -
+Means dan SOM 
+pada dataset 
+MovieLens. 
+4. Efektivitas 
+Algoritma 
+Fuzzy C -
+Means 
+dalam 
+Klasterisas
+i Bidang 
+Minat 
+Anak Usia 
+Dini 
+Mengguna
+kan Skor 
+Silhouette 
+ 
+Pramana, 
+R. A., & 
+Yamasari, 
+Y. 
+ 
+ 
+JINACS: 
+Journal of 
+Informatics 
+and 
+Computer 
+Science, 2025 
+ 
+Kesulitan dalam 
+mengelompokka
+n data minat 
+yang memiliki 
+karakteristik 
+samar ( fuzzy) 
+jika 
+menggunakan 
+metode 
+klasterisasi tegas 
+(hard 
+clustering). 
+ 
+Algoritma FCM 
+terbukti efektif 
+menangani data 
+yang kompleks. 
+Pengujian 
+validitas 
+menggunakan 
+Silhouette Score  
+menghasilkan 
+nilai positif 
+(mendekati 1), 
+yang 
+menunjukkan 
+bahwa struktur 
+klaster yang 
+terbentuk 
+memiliki tingkat 
+validitas dan 
+akurasi tinggi. 
+--- PAGE BREAK ---
+ 
+ 
+29 
+`No. Judul Pengaran
+g 
+Penerbit dan 
+Tahun 
+Permasalahan Hasil 
+5. Perbandin
+gan 
+Algoritma 
+K-Means 
+dengan 
+Fuzzy C -
+Means 
+Untuk 
+Clustering 
+Tingkat 
+Kedisiplin
+an Kinerja 
+Karyawan 
+ 
+Agustina, 
+N., & 
+Prihandok
+o, P. 
+ 
+ 
+Jurnal RESTI 
+(Rekayasa 
+Sistem Dan 
+Teknologi 
+Informasi), 
+2018 
+ 
+Perlu diketahui 
+perbandingan 
+akurasi antara 
+metode K-
+Means dan FCM 
+dalam 
+menangani data 
+kinerja yang 
+memiliki 
+variansi nilai 
+tinggi. 
+ 
+FCM 
+memberikan 
+hasil klasterisasi 
+yang lebih detail 
+dibandingkan K-
+Means karena 
+mampu 
+menangani data 
+yang berada di 
+perbatasan 
+antar-klaster 
+melalui derajat 
+keanggotaan 
+(nilai 0 hingga 
+1). 
+ 
+ 
+Berdasarkan tinjauan literatur pada Tabel II.5, algoritma  Fuzzy C -Means (FCM) 
+secara konsisten menunjukkan keunggulan dalam menangani dataset yang memiliki 
+karakteristik samar atau ambiguitas nilai tinggi. Agustina & Prihandoko (2018) serta 
+Pramana & Yamasari (2025) membuktikan secara komparatif bahwa FCM mampu 
+menghasilkan s truktur klaster yang lebih detail dan valid dibandingkan metode  hard 
+clustering seperti K -Means, terutama pada kasus di mana batasan antar -kelompok tidak 
+tegas. 
+Dalam konteks pariwisata, Rahmanita et al. (2025) berhasil memetakan potensi 
+wisata Madura menggunakan FCM dengan validasi Indeks Xie -Beni yang menunjukkan 
+partisi optimal. Sementara itu, Sutjiadi et al. (2018) membangun rekomendasi paket wisata 
+di Surabay a yang dinilai akurat oleh 75% responden. Namun, kedua penelitian tersebut 
+masih memiliki keterbatasan: Rahmanita lebih berfokus pada pemetaan wilayah untuk 
+strategi promosi, sedangkan Sutjiadi belum menerapkan mekanisme personalisasi biaya 
+yang mendalam.  Selain itu , Lee (2022) mengusulkan optimasi FCM untuk sistem 
+rekomendasi yang mampu menangani kelangkaan data, namun fokusnya adalah pada 
+preferensi genre film, bukan pada batasan kendala finansial nyata.  
+Merujuk pada keterbatasan penelitian -penelitian sebelumnya, penelitian ini 
+dirancang untuk melengkapi kekurangan tersebut dengan menerapkan pendekatan baru. 
+Fokus utama penelitian ini adalah mengintegrasikan algoritma Fuzzy C -Means 
+dengan Google Maps Distance Matrix API untuk akurasi biaya transportasi, serta memecah 
+--- PAGE BREAK ---
+ 
+ 
+30 
+total anggaran wisata ke dalam  empat komponen proporsional  (tiket, akomodasi, kuliner, 
+transportasi). Pendekatan ini diharapkan dapat menghasilkan rekomendasi yang lebih presisi 
+dan relevan bagi wisatawan individual.
+--- PAGE BREAK ---
+ 
+ 31 
+BAB III  
+METODE PENELITIAN  
+ 
+3.1 Waktu dan Tempat Penelitian 
+Penelitian ini dila ksanakan di Laboratorium Prodi D4 Teknik Informatika, 
+Universitas Airlangga, Surabaya. Proses penelitian ini dilakukan dalam kurun waktu 5 bulan, 
+terhitung mulai bulan Desember 2025 hingga Mei 2026 , mencakup seluruh tahapan 
+penelitian dari pengumpulan data hingga evaluasi sistem.  
+ 
+Table III.1 Waktu Penelitian 
+No. Kegiatan 
+Bulan 
+1 2 3 4 5 6 
+1. Studi 
+Literatur 
+ 
+      
+2. Pengumpulan 
+Data 
+      
+3. Pengolahan 
+Data 
+      
+4. Implementasi 
+FCM 
+      
+6. Evaluasi 
+FCM 
+      
+7. Pemilihan 
+Paket Wisata 
+      
+8. Perancangan 
+Sistem 
+      
+9. Implementasi 
+Sistem 
+      
+10. Pengujian 
+Sistem 
+      
+--- PAGE BREAK ---
+ 
+ 
+32 
+9. Evaluasi 
+Sistem 
+      
+ 
+3.2 Alat dan Bahan Penelitian 
+Alat yang digunakan untuk menunjang penelitian ini adalah komputer yang yang 
+memiliki spesifikasi sebagai berikut : 
+3.2.1 Alat Penelitian 
+Alat yang menunjang penelitian dan penyusunan skripsi ini terdiri dari : 
+1. Perangkat Keras (Hardware) 
+Table III.2 Spesifikasi Perangkat Keras 
+No. Nama Spesifikasi 
+1. Processor 2,5 GHz Quad-Core Intel Core i7 
+2. Installed Ram 16 GB 1600 MHz DDR3 
+3. System Type x64-based PC  
+4. Storage 512 GB SSD 
+ 
+2. Perangkat Lunak (Software)\ 
+Table III.3 Spesifikasi Perangkat Lunak 
+No. Nama Spesifikasi 
+1. Oper MacOS Monterey, Version 12.7.6  
+2. Editor/IDE Visual Studio Code  
+3. Web Server MAMP (Apache/Nginx, MySQL, PHP) 
+4. Bahasa Pemrogaman Python 3.11.2 dan PHP 8.3 
+5. Framework Laravel 11 
+ 
+3.2.2 Bahan Penelitian 
+Bahan penelitian yang digunakan dalam penelitian ini terdiri dari tiga kategori data 
+utama yang diperoleh melalui proses pengumpulan data bertahap ( multi-stage data 
+collection). Seluruh data dikumpulkan untuk mendukung proses klastering paket wisata 
+berbasis algoritma Fuzzy C-Means (FCM). Rincian bahan penelitian adalah sebagai berikut: 
+ 
+ 
+ 
+--- PAGE BREAK ---
+ 
+ 
+33 
+1. Data Geospasial dan Reputasi 
+Data objek wisata, akomodasi (hotel), dan kuliner (restoran) di kawasan Malang 
+Raya diperoleh melalui teknik  Web Scraping  pada platform Google Maps 
+menggunakan bahasa pemrograman Python dengan library Selenium. Proses 
+pengumpulan data dilakukan pada Januari 2026 dengan kata kunci pencarian 
+spesifik untuk masing -masing kategori: "tempat wisata", "hotel", dan "tempat 
+makan". Dataset yang terkumpul pada tahap ini mencakup  1.042 data  dengan 
+rincian distribusi sebagai berikut: 
+a. Tempat wisata: 188 data 
+b. Akomodasi (hotel): 363 data 
+c. Kuliner (restoran): 491 data 
+Setiap data mencakup atribut: nama destinasi, kategori, rating kepuasan 
+pengunjung, jumlah ulasan, dan koordinat geografis (latitude/longitude). Namun, 
+atribut harga pada tahap ini masih kosong atau tidak tersedia karena keterbatasan 
+informasi harga yang ditampilkan di Google Maps. 
+ 
+2. Data Biaya 
+Mengingat atribut harga tidak tersedia secara konsisten di Google Maps, 
+dilakukan proses scraping tambahan untuk melengkapi data harga dengan strategi 
+berbeda untuk setiap kategori: 
+a. Harga Tiket Wisata dan Akomodasi 
+Harga tiket masuk objek wisata dan tarif kamar hotel diperoleh melalui Google 
+Search Engine dengan query terstruktur yang menargetkan situs Traveloka. 
+ 
+b. Harga Kuliner 
+Harga menu makanan  bersumber dari aplikasi layanan pesan antar makanan 
+(GoFood) dengan mengambil harga menu termahal sebagai representasi batas 
+atas biaya makan. 
+ 
+3. Data Jarak dan Acuan Tarif Transportasi 
+Data jarak tempuh riil (driving distance) antar destinasi diperoleh secara real-time 
+menggunakan Google Maps Distance Matrix API . API ini , memberikan jarak 
+mengemudi yang memperhitungkan rute jalan raya sesungguhnya. 
+--- PAGE BREAK ---
+ 
+ 
+34 
+Tarif per kilometer untuk estimasi biaya transportasi mengacu pada  regulasi 
+pemerintah Indonesia dan kebijakan tarif aplikasi transportasi online Gojek untuk 
+wilayah Malang Raya yang berlaku pada Januari 2026. Acuan tarif didasarkan 
+pada: 
+• Keputusan Gubernur Jawa Timur No. 188/291/KPTS/013/2023  tentang 
+Penyesuaian Biaya Jasa Minimum Angkutan Sewa Khusus di Provinsi Jawa 
+Timur, yang menetapkan tarif batas bawah (TBB) dan tarif batas atas (TBA) 
+untuk layanan angkutan berbasis aplikasi. 
+• Keputusan Menteri Perhubungan No. KP 667 Tahun 2022  tentang 
+Pedoman Perhitungan Biaya Jasa Penggunaan Sepeda Motor yang Digunakan 
+untuk Kepentingan Masyarakat yang Dilakukan dengan Aplikasi. 
+• Kebijakan Harga Dinamis Gojek  yang disesuaikan dengan kondisi 
+permintaan pasar dan jarak tempuh.  
+ 
+Berikut Rincian tarif yang digunakan sebagai acuan dijabarkan pada table berikut: 
+ 
+Table III.4 Tarif Transportasi Online Gojek Malang Raya 
+Jenis 
+Layanan 
+Batas 
+Tarif 
+(Rp/km) 
+Nilai 
+Acuan 
+Kapasitas 
+Rekomendasi 
+Sumber Regulasi 
+ 
+GoRide 
+(Motor) 
+2.000 - 
+2.500 
+2.250 1 orang KP 667/2022 
+GoCar 
+Standard 
+3.800 - 
+6.500 
+5.150 2-4 orang Pergub Jatim 
+188/291/KPTS/013/2023 
+GoCar 
+XL 
+4.500 - 
+7.500 
+6.000 5-6 orang Pergub Jatim 
+188/291/KPTS/013/2023 
+  
+4. Variabel Data Penelitian 
+Rincian atribut data final yang digunakan setelah proses pengumpulan dan seleksi 
+dijabarkan pada Tabel berikut: 
+ 
+ 
+ 
+--- PAGE BREAK ---
+ 
+ 
+35 
+ 
+Table III.5 Variabel Data Penelitian 
+No. Nama Variabel Tipe Data Sumber Data Keterangan 
+1. Nama Destinasi String Google Maps Nama unik tempat 
+wisata, hotel, atau 
+restoran sebagai 
+identitas data. 
+2. Harga Interger Google Search / 
+GoFood 
+Biaya masuk 
+wisata, tarif kamar 
+hotel per malam, 
+atau harga menu 
+termahal restoran 
+(Rupiah). Variabel 
+utama untuk proses 
+klastering. 
+3. Latitude Float Google Maps Koordinat garis 
+lintang. Digunakan 
+sistem untuk 
+menghitung jarak 
+via Google Maps 
+API dan 
+menampilkan peta.  
+4. Longitude Float Google Maps Koordinat garis 
+bujur. Digunakan 
+sistem untuk 
+menghitung jarak 
+via Google Maps 
+API dan 
+menampilkan peta. 
+ 
+3.3 Tahapan Penelitian 
+Penelitian ini dilaksanakan melalui serangkaian tahapan sistematis untuk 
+memastikan tujuan penelitian tercapai secara terstruktur. Alur penelitian dimulai dari studi 
+--- PAGE BREAK ---
+ 
+ 
+36 
+literatur hingga tahap evaluasi sistem akhir. Secara visual, urutan langkah-langkah penelitian 
+digambarkan dalam flowchart pada Gambar 3.1. 
+ 
+Gambar III.1 Tahapan Penelitian 
+ 
+3.3.1 Studi Literatur 
+Tahap ini merupakan fondasi awal penelitian, tahap ini mencakup proses  
+mengumpulkan, menelaah, dan menganalisis berbagai referensi ilmiah yang relevan dengan 
+topik penelitian. Fokus kajian literatur meliputi: 
+1. Algoritma Fuzzy C-Means (FCM)  
+Memahami konsep dasar klasterisasi data numerik untuk  segmentasi 
+harga destinasi wisata, serta mempelajari fungsi objektif dan logika iterasi 
+algoritma dalam mengelompokkan data berdasarkan tingkat kemiripan harga. 
+ 
+2. Xie-Beni Index 
+Mempelajari metode validasi klaster menggunakan Xie-Beni Index untuk 
+mengukur kualitas hasil klasterisasi dan  menentukan jumlah klaster optimal  (c) 
+berdasarkan rasio kekompakan (compactness) dan pemisahan (separation) data. 
+ 
+3. Sistem Rekomendasi  
+Mempelajari arsitektur sistem rekomendasi yang dapat menyesuaikan saran 
+perjalanan dengan preferensi pengguna. 
+ 
+ 
+ 
+
+--- PAGE BREAK ---
+ 
+ 
+37 
+4. Komponen Biaya Perjalanan 
+Mempelajari struktur biaya perjalanan wisata guna menentukan komponen 
+utama pembentuk paket, yang meliputi perhitungan biaya tiket masuk, 
+akomodasi, konsumsi, dan biaya transportasi berbasis jarak. 
+ 
+5. Integrasi Data Geospasial 
+Mempelajari pemanfaatan  Google Maps Distance Matrix API  untuk 
+mendapatkan data jarak tempuh riil ( driving distance) dan waktu tempuh antar 
+lokasi sebagai dasar perhitungan biaya transportasi yang akurat. 
+ 
+6. Metode Evaluasi Sistem 
+Mempelajari metode  Black Box Testing  untuk pengujian fungsionalitas 
+perangkat lunak dan  System Usability Scale  (SUS) untuk pengukuran tingkat 
+kegunaan (usability) sistem dari perspektif pengguna akhir. 
+ 
+3.3.2 Pengumpulan dan Pengolahan Data 
+Tahapan ini menjabarkan prosedur dalam memperoleh data mentah dari sumber 
+hingga data siap digunakan sebagai input algoritma klastering. Seluruh proses dilakukan 
+menggunakan bahasa pemrograman Python dengan library Selenium untuk otomasi web 
+scraping dan Pandas untuk pengolahan data. 
+1. Pengumpulan Data Geospasial dan Atribut Destinasi 
+Proses pengumpulan data geospasial dilakukan melalui otomasi scraping pada 
+platform Google Maps dengan langkah-langkah berikut: 
+a. Navigasi dan Pencarian 
+Sistem mengakses Google Maps melalui URL pencarian terstruktur dengan 
+kata kunci spesifik untuk setiap kategori destinasi (tempat wisata, hotel, 
+tempat makan). Browser dikonfigurasi untuk memaksimalkan jangkauan 
+elemen yang dapat diekstrak. 
+ 
+b. Penanganan Lazy Loading 
+Karena Google Maps menggunakan mekanisme  lazy loading (data dimuat 
+bertahap saat pengguna scroll), sistem menerapkan algoritma scrolling 
+otomatis yang  mendeteksi kapan semua data telah termuat (melalui 
+pengecekan pesan akhir daftar atau stagnasi perubahan konten) , 
+--- PAGE BREAK ---
+ 
+ 
+38 
+memberikan jeda antar scroll untuk memastikan rendering elemen selesai , 
+dan menangani kasus di mana data baru perlu dipicu ulang dengan strategi 
+scroll mundur-maju. 
+ 
+c. Ekstraksi Atribut 
+Dari setiap kartu destinasi yang termuat, sistem mengekstrak: 
+• Nama dan URL dari elemen tautan utama. 
+• Rating dan jumlah ulasan  dari label bintang menggunakan pattern 
+matching. 
+• Koordinat geografis  (latitude, longitude) yang diparsing dari URL 
+detail lokasi. 
+ 
+2. Pengumpulan Data Harga 
+Mengingat informasi harga tidak tersedia secara konsisten di Google Maps, 
+dilakukan proses scraping tambahan dengan strategi berbeda untuk setiap 
+kategori: 
+a. Harga Wisata dan Akomodasi 
+Untuk setiap destinasi, sistem melakukan pencarian di Google dengan 
+query terstruktur yang menargetkan situs agregator perjalanan (seperti 
+Traveloka). Harga diekstrak dari hasil pencarian menggunakan pattern 
+recognition untuk format mata uang Rupiah, kemudian divalidasi untuk 
+memastikan nilai masuk akal. 
+ 
+b. Harga Kuliner 
+Karena data harga makanan tidak tersedia di platform agregator standar, 
+digunakan pendekatan khusus: 
+1. Sistem mencari restoran di platform GoFood melalui pencarian 
+Google. 
+2. Pada halaman restoran, seluruh daftar menu dimuat melalui strategi 
+scrolling bertahap. 
+3. Teks halaman diparsing untuk mengidentifikasi pasangan nama 
+menu dan harga. 
+--- PAGE BREAK ---
+ 
+ 
+39 
+4. Dari kumpulan harga menu, dihitung nilai median yang digunakan 
+sebagai representasi harga restoran. 
+ 
+3. Pembersihan dan Validasi Data 
+Data mentah hasil scraping melalui proses quality assurance: 
+a. Filtering Data Tidak Lengkap 
+Destinasi yang tidak memiliki harga valid (nilai kosong atau nol) dihapus 
+dari dataset, karena harga merupakan variabel kunci dalam proses 
+klastering. 
+b. Penghapusan Duplikasi 
+Data ganda diidentifikasi berdasarkan kesamaan nama destinasi dan dihapus 
+untuk memastikan keunikan setiap entitas. 
+c. Standarisasi Format 
+1. Harga dikonversi dari format teks (contoh: "Rp 15.000") menjadi tipe 
+numerik integer 
+2. Koordinat geografis divalidasi sebagai tipe float yang valid 
+3. ID unik dihasilkan ulang secara berurutan setelah proses cleaning 
+ 
+4. Integrasi Dataset 
+Dataset bersih dari ketiga kategori (Wisata, Hotel, Kuliner) disimpan dalam 
+file terpisah, kemudian diintegrasikan ke dalam basis data sistem. Data harga 
+yang telah terstandarisasi digunakan dalam nilai aslinya ( raw value) sehingga 
+hasil pusat klaster (centroid) nantinya dapat langsung diinterpretasikan dalam 
+satuan Rupiah. 
+ 
+5. Penanganan Hambatan Teknis 
+Beberapa tantangan teknis yang diantisipasi selama proses scraping: 
+a. Verifikasi Bot (CAPTCHA):  Sistem mendeteksi kemunculan CAPTCHA 
+dan menghentikan proses sementara untuk diselesaikan secara manual oleh 
+operator 
+b. Rate Limiting: Pemberian jeda waktu acak antar request untuk menghindari 
+pemblokiran oleh server 
+c. Elemen Tidak Stabil: Penanganan kondisi di mana elemen halaman berubah 
+saat proses ekstraksi berlangsung 
+--- PAGE BREAK ---
+ 
+ 
+40 
+ 
+ 
+ 
+3.3.3 Implementasi Metode Fuzzy C-Means  
+Algoritma Fuzzy C -Means (FCM) digunakan untuk mengelompokkan destinasi 
+wisata, hotel, dan kuliner berdasarkan harga ke dalam tiga kategori anggaran: Hemat, 
+Balanced, dan Premium. Berbeda dengan pendekatan konvensional yang menjalankan 
+pengelompokan sekali pada tahap awal, sistem ini menerapkan konsep  pengelompokan 
+dinamis (dynamic clustering). Artinya, proses pengelompokan dijalankan secara otomatis 
+setiap kali pengguna memasukkan jumlah anggaran mereka. Tujuannya adalah agar 
+rekomendasi yang dihasilkan benar-benar personal dan menyesuaikan dengan kemampuan 
+finansial masing-masing pengguna. 
+ 
+1. Konsep Pengelompokan Real-Time 
+Pada sistem rekomendasi standar, data biasanya dikelompokkan satu kali dan 
+hasilnya disimpan tetap. Kelemahannya, kategori "Mahal" atau "Murah" menjadi 
+kaku dan tidak melihat konteks pengguna. Sistem yang dikembangkan ini 
+mengatasi hal tersebut dengan menjalankan algoritma tepat saat pengguna selesai 
+mengisi formulir pencarian. Proses ini memiliki tiga karakteristik utama: 
+a. Pemicu Otomatis: Algoritma berjalan seketika saat data anggaran diterima. 
+b. Berbasis Anggaran:  Nilai anggaran pengguna dijadikan patokan utama 
+(anchor) untuk menentukan standar harga. 
+c. Hasil Unik:  Setiap pengguna dengan anggaran berbeda akan mendapatkan 
+standar pengelompokan yang berbeda pula. 
+ 
+2. Variabel dan Parameter 
+Data yang diolah dalam proses ini hanya satu variabel, yaitu  Harga (Rupiah) . 
+Lokasi geografis tidak dimasukkan dalam proses pengelompokan harga, 
+melainkan dihitung terpisah nanti saat penyusunan rute.  Jumlah kelompok 
+(klaster) ditetapkan sebanyak tiga kategori, yang mewakili: 
+a. Kategori Hemat: Untuk opsi yang jauh di bawah anggaran maksimal. 
+b. Kategori Balanced: Untuk opsi yang harganya mendekati anggaran pengguna. 
+c. Kategori Premium: Untuk opsi harga di atas anggaran, bagi pengguna yang 
+mengutamakan kualitas. 
+--- PAGE BREAK ---
+ 
+ 
+41 
+ 
+3. Inisialisasi Pusat Klaster Berbasis Anggaran 
+Inovasi utama dalam penelitian ini terletak pada cara sistem menentukan titik 
+awal pengelompokan. Sistem tidak menebak titik awal secara acak, melainkan 
+menghitungnya secara proporsional dari anggaran pengguna.  Cara Bagaimana 
+Perhitungan Pusat Awal  ditentukan yaitu ketika pengguna memasukkan total 
+anggaran, sistem menetapkan tiga titik sentral sementara: 
+a. Titik Pusat Hemat ditetapkan sebesar 60% dari total anggaran. 
+b. Titik Pusat Balanced  ditetapkan sebesar  100% (sama persis) dari total 
+anggaran. 
+c. Titik Pusat Premium ditetapkan sebesar 140% dari total anggaran. 
+ 
+Kategori Persentase 
+Jika Anggaran 
+Pengguna A = 
+Rp 5.000.000 
+Jika Anggaran 
+Pengguna B = 
+Rp 10.000.000 
+Hemat 60% Titik awal di Rp 
+3.000.000 
+Titik awal di Rp 
+6.000.000 
+Balanced 100% Titik awal di Rp 
+5.000.000 
+Titik awal di Rp 
+10.000.000 
+Premium 140% Titik awal di Rp 
+7.000.000 
+Titik awal di Rp 
+14.000.000 
+ 
+Dengan metode ini, kategori harga menjadi fleksibel. Nilai Rp 7.000.000 bisa 
+dianggap "Premium" bagi Pengguna A, namun bagi Pengguna B nilai tersebut 
+mungkin masih masuk kategori wajar atau hemat. Pemilihan persentase 60%, 
+100%, dan 140% ini didasarkan pad a hasil eksperimen untuk mendapatkan 
+variasi paket yang paling optimal. 
+ 
+4. Prosedur Pengelompokan 
+Setelah titik awal ditentukan, sistem menjalankan proses berulang (iterasi) untuk 
+mematangkan posisi kelompok data. Berikut adalah langkah -langkah yang 
+dilakukan sistem dalam bahasa sederhana: 
+ 
+--- PAGE BREAK ---
+ 
+ 
+42 
+ 
+a. Penentuan Posisi Data  
+Sistem menempatkan setiap data destinasi (hotel, wisata, kuliner) ke dalam 
+peta perhitungan. Setiap data diberi nilai keanggotaan awal secara acak, yang 
+menunjukkan seberapa besar kemungkinan data tersebut masuk ke kategori 
+Hemat, Balanced, atau Premium. T otal nilai keanggotaan satu data untuk 
+ketiga kategori tersebut harus selalu berjumlah satu (100%). 
+ 
+b. Perbaikan Posisi Pusat (Update Centroid)  
+Sistem menghitung ulang posisi pusat kategori yang sebenarnya berdasarkan 
+rata-rata harga data. Data yang memiliki nilai keanggotaan tinggi akan 
+menarik pusat kategori mendekati harganya. Pusat kategori ini langsung 
+menunjukkan nilai Rupiah rata-rata. 
+ 
+c. Pengukuran Jarak dan Evaluasi  
+Sistem mengukur selisih harga antara setiap destinasi dengan pusat kategori 
+yang baru. Semakin kecil selisih harganya, semakin besar nilai keanggotaan 
+destinasi tersebut ke kategori itu. Contoh: Jika harga sebuah hotel sangat 
+dekat dengan Pusat Hemat, maka nilai keanggotaan hotel tersebut ke kategori 
+Hemat akan menjadi sangat besar (mendekati 1), sementara ke kategori lain 
+mengecil. 
+ 
+d. Pengecekan Kestabilan (Konvergensi) 
+Langkah 2 dan 3 diulang terus -menerus hingga posisi pusat kategori tidak 
+lagi berubah signifikan atau perubahannya sangat kecil (di bawah ambang 
+batas toleransi 0,001). Ini menandakan bahwa pengelompokan sudah stabil. 
+ 
+e. Penetapan Label Akhir  
+Setelah proses stabil, setiap destinasi diberi label akhir berdasarkan nilai 
+keanggotaan tertingginya. Contoh: Sebuah hotel memiliki nilai keanggotaan: 
+• ke Hemat: 0,7 (70%) 
+• ke Balanced: 0,2 (20%) 
+• ke Premium: 0,1 (10%) 
+--- PAGE BREAK ---
+ 
+ 
+43 
+Maka sistem menetapkan hotel tersebut sebagai  Hotel Hemat  karena nilai 
+70% adalah yang terbesar. 
+ 
+5. Eksekusi Terpisah 
+Proses di atas dijalankan tiga kali secara terpisah untuk masing -masing jenis 
+data: 
+a. Pengelompokan khusus Data Hotel 
+b. Pengelompokan khusus Data Wisata 
+c. Pengelompokan khusus Data Kuliner 
+ 
+Pemisahan ini penting karena rentang harga hotel (ratusan ribu) sangat berbeda 
+dengan harga tiket wisata atau makanan (puluhan ribu), sehingga hasilnya akan 
+lebih akurat jika dihitung sendiri-sendiri. 
+ 
+6. Hasil Akhir 
+Output dari proses ini adalah label kategori (Hemat/Balanced/Premium) yang 
+melekat pada setiap tempat wisata, hotel, dan rumah makan. Label ini bersifat 
+sementara dan khusus untuk sesi pencarian pengguna tersebut. Label inilah yang 
+kemudian digunakan oleh sistem untuk menyusun paket wisata yang sesuai 
+dengan permintaan pengguna di tahap selanjutnya. 
+ 
+3.3.4 Evaluasi FCM 
+Kualitas hasil klastering perlu dievaluasi untuk memastikan bahwa pengelompokan 
+yang dihasilkan algoritma FCM memiliki  compactness (kekompakan data dalam klaster) 
+dan separation (pemisahan antar klaster) yang baik. Sub -bab ini menjelaskan metode 
+evaluasi yang digunakan untuk menilai validitas model clustering dan memvalidasi 
+pemilihan ratio inisialisasi centroid. 
+ 
+1. Indeks Validitas Xie-Beni 
+Seperti dijelaskan pada Sub -bab 2.17, indeks Xie -Beni adalah metrik validitas 
+klaster yang mengukur rasio antara total variasi dalam klaster ( compactness) 
+dengan separasi minimum antar pusat klaster ( separation). Indeks ini dipilih 
+karena sesuai untuk evaluasi Fuzzy C -Means dan tidak memerlukan 
+informasi ground truth. 
+--- PAGE BREAK ---
+ 
+ 
+44 
+ 
+a. Prosedur Perhitungan 
+Nilai Xie-Beni (𝑋𝐵) dihitung melalui tiga tahapan (Al-Janabee & Al-Sarray, 
+2022) : 
+• Menghitung Total Variansi ( σ) menggunakan Persamaan (2 ,7), yang 
+mengakumulasi jarak kuadrat antara data dengan pusat klasternya, 
+ditimbang oleh derajat keanggotaan. 
+• Menghitung Separasi Minimum ( 𝑠𝑒𝑝) menggunakan Persamaan (2 ,8), 
+yang menentukan jarak kuadrat minimum antara pusat-pusat klaster yang 
+berbeda. 
+• Menghitung Nilai Akhir Xie-Beni (𝑋𝐵) menggunakan Persamaan (2,9), 
+yang merupakan pembagian variansi dengan separasi dikalikan jumlah 
+data. 
+ 
+b. Interpretasi untuk Sistem Real-Time 
+Dalam konteks sistem yang menjalankan FCM secara real-time berdasarkan 
+input budget pengguna: 
+• Nilai 𝑋𝐵 yang lebih kecil  menunjukkan bahwa destinasi berhasil 
+dikelompokkan dengan baik ke dalam kategori Hemat, Balanced, dan 
+Premium untuk budget spesifik tersebut 
+• Nilai 𝑋𝐵 yang besar  mengindikasikan bahwa budget yang diinputkan 
+menghasilkan klaster yang kurang terpisah dengan jelas (misal: budget 
+ekstrem yang tidak representatif untuk dataset) 
+ 
+2. Validasi Jumlah Klaster Optimal 
+Meskipun sistem ini menggunakan c = 3 klaster sesuai dengan konsep kategori 
+anggaran (Hemat, Balanced, Premium), validasi tetap dilakukan untuk 
+memastikan bahwa pemilihan ini optimal secara matematis. 
+ 
+a. Prosedur Validasi 
+Untuk setiap kategori destinasi (Hotel, Wisata, Kuliner), dilakukan 
+eksperimen dengan variasi jumlah klaster: 
+ 
+--- PAGE BREAK ---
+ 
+ 
+45 
+Jumlah Klaster (c) Interpretasi Prediksi Nilai 𝑋𝐵 
+c = 2 
+Hanya "Murah" dan 
+"Mahal" 
+Lebih tinggi (kurang detail) 
+c = 3 
+"Hemat", "Balanced", 
+"Premium" (pilihan 
+sistem) 
+Terkecil (optimal) 
+c = 4 Terlalu granular Lebih tinggi (overlap klaster) 
+c = 5 Terlalu kompleks Jauh lebih tinggi 
+ 
+Untuk setiap nilai c, dihitung indeks Xie-Beni. Nilai c yang menghasilkan 𝑋𝐵 
+terkecil dianggap optimal. Hasil eksperimen lengkap akan disajikan pada Bab 
+4 (Hasil dan Pembahasan). 
+ 
+b. Justifikasi Pemilihan c = 3 
+Berdasarkan analisis eksplorasi data awal dan studi pustaka (Marigallang et 
+al., 2024; Rahmanita et al., 2025), diperkirakan c = 3 akan menghasilkan nilai 
+𝑋𝐵 terkecil karena: 
+• Distribusi harga destinasi di Malang Raya cenderung membentuk 3 pola 
+natural (low-mid-high) 
+• Dari perspektif user experience, 3 kategori memberikan pilihan yang 
+cukup tanpa membingungkan 
+• Terlalu sedikit klaster ( c = 2) tidak cukup merepresentasikan variasi 
+budget wisatawan 
+• Terlalu banyak klaster ( c > 3) akan menghasilkan separasi yang terlalu 
+kecil (klaster tumpang tindih) 
+ 
+3. Validasi Ratio Inisialisasi Centroid 
+Pemilihan ratio 0.6x, 1.0x, dan 1.4x  untuk inisialisasi centroid berbasis budget 
+(seperti dijelaskan di Sub -bab 3.3.3) perlu divalidasi melalui eksperimen 
+empiris. Sub -bagian ini menjelaskan metodologi eksperimen yang akan 
+dilakukan pada Bab 4. 
+ 
+ 
+--- PAGE BREAK ---
+ 
+ 
+46 
+a. Skema Ratio yang Diuji: 
+Skema Ratio Hemat Ratio Balanced 
+Ratio 
+Premium 
+Rentang Jarak 
+A 0,5x 1,0x 1,5x 
+Sangat Lebar 
+(100%) 
+B 0,6x 1,0x 1,4x Moderat (80%) 
+C 0,7x 1,0x 1,3x Sempit (60%) 
+D 0,5x 1,0x 2,0x Ekstrem (150%) 
+E 0,8x 1,0x 1,2x 
+Sangat Sempit 
+(40%) 
+ 
+b. Metrik Evaluasi: 
+Untuk setiap skema ratio, akan dievaluasi berdasarkan: 
+• Indeks Xie -Beni (Persamaan 2.9):  Skema dengan nilai 𝑋𝐵 terkecil 
+adalah skema  paling optimal secara matematis  menunjukkan klaster 
+yang kompak dan terpisah dengan baik 
+• Diversitas Paket: Jumlah kombinasi paket unik yang dapat terbentuk 
+dari hasil clustering Semakin beragam  berarti user punya lebih banyak 
+pilihan rekomendasi 
+• Coverage Budget: Persentase budget user yang ter -cover oleh paket 
+rekomendasi. Jadi, i dealnya: paket Hemat ≤ 60% budget, paket 
+Balanced ≈ 100% budget, paket Premium ≤ 140% budget 
+ 
+c. Hipotesis Pemilihan Ratio 0,6-1,0-1,4: 
+Ratio ini dipilih dengan hipotesis: 
+• 0,6x (Hemat): Memberikan margin keamanan 40% dari budget untuk 
+biaya tak terduga dan memberikan ruang fleksibilitas bagi wisatawan 
+yang ingin berhemat. 
+• 1,0x (Balanced): Merepresentasikan penggunaan budget secara optimal 
+dan maksimal sesuai kemampuan finansial pengguna. 
+• 1,4x (Premium):  Memberikan opsi " stretch" 40% untuk wisatawan 
+yang bersedia sedikit melebihi budget demi mendapatkan kualitas atau 
+pengalaman lebih baik, 
+--- PAGE BREAK ---
+ 
+ 
+47 
+Hipotesis ini akan dibuktikan melalui eksperimen pada Bab 4 dengan 
+membandingkan kelima skema di atas terhadap sample budget yang 
+beragam. 
+ 
+4. Prosedur Evaluasi Real-Time 
+Sistem menjalankan FCM secara real-time untuk setiap pengguna dengan 
+budget berbeda, evaluasi juga dilakukan secara dinamis: 
+a. Evaluasi Per-Request: 
+Setiap kali FCM selesai dieksekusi untuk satu pengguna, sistem menghitung 
+nilai Xie -Beni menggunakan  Persamaan (2.7) , (2.8), dan  (2.9) untuk hasil 
+clustering tersebut. Nilai ini dapat: 
+• Disimpan dalam log sistem untuk monitoring kualitas clustering 
+• Digunakan sebagai indikator apakah hasil clustering acceptable 
+ 
+b. Threshold Kualitas Minimum: 
+Sistem dapat menerapkan threshold nilai XB maksimum (contoh: XB harus 
+lebih kecil dari 0,5) sebagai indikator kualitas acceptable berdasarkan hasil 
+eksperimen validasi. Jika hasil clustering menghasilkan nilai XB yang terlalu 
+tinggi: 
+• Sistem mencatat warning di log 
+• Dapat memberikan notifikasi kepada user bahwa rekomendasi mungkin 
+kurang optimal untuk budget tersebut 
+ 
+c. Monitoring Produksi 
+Pada fase operasional sistem, statistik XB dapat dikumpulkan secara agregat 
+untuk: 
+• Memvalidasi bahwa ratio 0,6 -1,0-1,4 tetap optimal untuk berbagai 
+range budget di kondisi riil. 
+• Mendeteksi anomali atau edge case (misal: budget ekstrem yang 
+menghasilkan clustering buruk). 
+• Memberikan insight untuk perbaikan sistem di masa mendatang. 
+ 
+ 
+--- PAGE BREAK ---
+ 
+ 
+48 
+3.3.5 Mekanisme Penentuan Paket Wisata  
+Mekanisme penentuan paket wisata dirancang untuk memberikan rekomendasi yang 
+personal dan adaptif terhadap kemampuan finansial masing -masing wisatawan. Sistem ini 
+mengimplementasikan pendekatan  dynamic clustering  di mana proses pembentukan 
+kategori anggaran (Hemat, Balanced, Premium) dilakukan secara real-time berdasarkan 
+budget spesifik yang diinputkan pengguna. Berbeda dengan sistem konvensional yang 
+menyimpan label cluster secara permanen, pendekatan ini menghasilkan rekomendasi yang 
+benar-benar disesuaikan dengan kondisi finansial individual setiap wisatawan.  Berikut alur 
+dari beberapa skenario yang disajikan oleh sistem: 
+1. Alur Utama Sistem : Budget-First Workflow 
+Alur utama sistem adalah skenario di mana pengguna memiliki batasan anggaran 
+yang ketat namun belum menentukan tujuan wisata secara spesifik. Proses 
+dimulai ketika sistem menerima tiga input utama dari pengguna: total anggaran 
+dalam Rupiah, jumlah peserta yang akan berwisata, dan durasi liburan dalam 
+satuan hari. Ketika pengguna menekan tombol submit atau "Cari Paket", sistem 
+langsung memicu eksekusi algoritma FCM secara real -time sebagaimana 
+dijelaskan pada Sub-bab 3.3.3. 
+Pada tahap clustering, sistem menginisialisasi centroid menggunakan 
+metode budget-anchored di mana total anggaran pengguna menjadi anchor 
+untuk menentukan pusat klaster: 60% dari budget untuk kategori Hemat, 100% 
+untuk Balanced, dan 140% untuk Premium. Algoritma FCM kemudian 
+dijalankan secara paralel untuk tiga kategori dataset (Hotel, Wisata, dan 
+Kuliner), dengan setiap destinasi mendapat label klaster berdasarkan kedekatan 
+harganya dengan centroid yang terbentuk. Selama proses ini berlangsung, sistem 
+menampilkan loading indicator kepada pengguna dengan estimasi waktu 
+eksekusi berkisar 1-3 detik tergantung volume data. 
+Setelah proses clustering selesai dan label klaster tersimpan, sistem melakukan 
+filtering bertahap. Filter primer berbasis cluster memilih destinasi sesuai 
+kategori yang relevan dengan budget pengguna, misalnya fokus pada cluster 
+Hemat untuk budget minimal , cluster Balanced untuk budget menengah, atau 
+dapat mengikutsertakan cluster Premium untuk budget yang lebih besar. 
+Selanjutnya, filter sekunder berbasis harga eksak hanya mengambil destinasi 
+yang harganya tidak melebihi budget pengguna dari pool destinas i yang sudah 
+terfilter cluster. 
+--- PAGE BREAK ---
+ 
+ 
+49 
+Sistem kemudian membentuk kombinasi paket dengan memilih satu hotel, satu 
+destinasi wisata, dan satu tempat kuliner dari cluster terpilih. Untuk setiap 
+kombinasi, dilakukan perhitungan biaya komponen dasar yang mencakup biaya 
+akomodasi (tarif hotel dikali durasi dan jumlah kamar, di mana jumlah kamar 
+dihitung dengan pembulatan ke atas dari jumlah peserta dibagi dua), biaya wisata 
+(harga tiket dikali jumlah peserta), dan biaya konsumsi (harga menu dikali 
+jumlah peserta, tiga kali makan, dikali durasi). 
+Untuk menghitung biaya transportasi, sistem mengambil koordinat geografis 
+dari ketiga destinasi terpilih dan memanggil Google Maps Distance Matrix API 
+secara real-time untuk mendapatkan jarak tempuh riil mengikuti rute Hotel ke 
+Wisata, Wisata ke Kuliner, dan kembali ke Hotel. Berdasarkan total jarak yang 
+diperoleh, sistem memilih tarif kendaraan yang sesuai mengacu pada Tabel III.5: 
+GoRide (Rp 2.250/km) untuk satu orang, GoCar Standard (Rp 5.150/km) untuk 
+2-4 orang, atau GoCar XL (Rp 6.000/km) untuk 5 -6 orang. Biaya transportasi 
+dihitung dengan mengalikan total jarak dengan tarif per kilometer, kemudian 
+dijumlahkan dengan ketiga komponen biaya dasar untuk mendapatkan total 
+biaya paket. 
+Sistem memvalidasi setiap paket dengan memeriksa apakah total biaya lebih 
+kecil atau sama dengan total anggaran yang diinputkan pengguna. Paket yang 
+tidak memenuhi kriteria (total biaya melebihi budget) tidak ditampilkan. Paket 
+yang valid kemudian diranking berdasarkan kedekatan dengan budget, di mana 
+paket yang mendekati namun tidak melebihi budget diberi prioritas lebih tinggi, 
+dengan rating destinasi sebagai tie-breaker untuk paket dengan total biaya yang 
+serupa. 
+Hasil Akhirnya  sistem menampilkan hingga tiga paket rekomendasi terbaik 
+kepada pengguna, masing -masing mewakili kategori Hemat, Balanced, dan 
+Premium (jika budget mencukupi). Setiap paket dilengkapi dengan detail 
+destinasi (nama, rating, harga), rincian biaya per kompon en, total biaya 
+keseluruhan, peta rute perjalanan untuk visualisasi, dan estimasi jarak tempuh. 
+Untuk perjalanan dengan durasi lebih dari satu hari, setiap paket rekomendasi 
+mencakup seluruh durasi liburan, bukan paket terpisah per hari. Hotel yang 
+direkomendasikan adalah hotel yang sama untuk semua malam menginap (tidak 
+berpindah-pindah), sementara destinasi wisata dan tempat kuliner dapat 
+bervariasi setiap harinya namun tetap berasal dari cluster yang sama untuk 
+--- PAGE BREAK ---
+ 
+ 
+50 
+menjaga konsistensi tingkat harga. Dengan demikian, pengguna menerima tiga 
+alternatif paket lengkap yang masing -masing sudah memperhitungkan total 
+biaya untuk keseluruhan durasi perjalanan. 
+ 
+2. Skenario Alternatif 1: Flexible Exploration Workflow 
+Untuk wisatawan yang masih dalam tahap perencanaan awal dan belum 
+memiliki budget pasti, sistem mengakomodasi dengan menerima input minimal 
+berupa jumlah peserta dan durasi tanpa meminta budget. Dalam kasus ini, sistem 
+menampilkan paket berdasarkan  kategori harga standar  yang telah ditetapkan 
+melalui offline clustering. 
+Berbeda dengan pendekatan real -time yang menggunakan budget pengguna 
+sebagai anchor, offline clustering dilakukan sekali pada fase deployment sistem 
+menggunakan statistik distribusi harga dataset. Pusat klaster diinisialisasi 
+berdasarkan percentile harga: percentile 25 (Q1) untuk kategori Hemat, 
+percentile 50 (median/Q2) untuk kategori Balanced (sedang), dan percentile 75 
+(Q3) untuk kategori Premium. Algoritma FCM kemudian dijalankan dan 
+hasilnya disimpan secara permanen dalam database sebagai label kategor i 
+standar. 
+Ketika pengguna mengakses mode eksplorasi tanpa budget, sistem menampilkan 
+sample paket dari ketiga kategori standar tersebut. Kemudian, sistem akan 
+menghitung biaya transportasi menggunakan Google Maps Distance Matrix API 
+berdasarkan rute antar lokasi dalam sample paket tersebut. Total biaya paket 
+sample mencakup komponen hotel, wisata, kuliner, dan transportasi sehingga 
+pengguna mendapatkan gambaran lengkap rentang harga untuk masing -masing 
+kategori (misalnya: paket Hemat  sekitar Rp 250-300 ribu, Balanced(sedang) 
+sekitar Rp 500-600 ribu, Premium sekitar Rp 900 ribu - 1 juta). Setelah melihat 
+estimasi ini, pengguna dapat memutuskan budget yang sesuai dan sistem dapat 
+beralih ke mode Budget-First dengan clustering real-time untuk memberikan 
+rekomendasi yang lebih personal. 
+ 
+3. Skenario Alternatif 2: Destination-First Workflow 
+Pada skenario ini, pengguna memulai interaksi dengan memilih satu destinasi 
+wisata utama yang ingin dikunjungi secara pasti. Sistem kemudian akan 
+--- PAGE BREAK ---
+ 
+ 
+51 
+mengoptimasi komponen pendukung lainnya menggunakan logika hybrid FCM 
+yang terbagi menjadi dua kondisi operasional: 
+• Kondisi A (Tanpa Input Budget): Berfokus pada eksplorasi variatif untuk satu 
+destinasi yang sama. Sistem mengunci destinasi pilihan pengguna, lalu 
+mengambil data hotel dan kuliner dari masing -masing klaster hasil  offline 
+clustering (Hemat, Balanced, dan Premium) untuk membentuk paket. Output 
+yang dihasilkan adalah tiga tingkatan pilihan paket beserta kalkulasi estimasi 
+total biayanya. 
+ 
+• Kondisi B (Dengan Input Budget): Berfokus pada validasi finansial real-time. 
+Sistem menjalankan Real-Time FCM  menggunakan anggaran pengguna 
+sebagai anchor pengali centroid (0.6x untuk Hemat, 1.0x untuk Balanced, dan 
+1.4x untuk Premium) khusus untuk mencari dataset hotel dan kuliner. Setelah 
+destinasi tetap digabungkan dengan hasil klasterisasi real -time, sistem 
+melakukan pengecekan akhir: jika 'Total Harga (Destinasi Fixed + Pendukung 
++ Transportasi)' masih dalam batas anggaran, paket ditampilkan; jika tidak, 
+sistem memberikan notifikasi penyesuaian anggaran. 
+ 
+4. Optimasi dan Error Handling 
+Sistem dirancang dengan mekanisme penanganan kondisi ekstrem dan error 
+untuk menjaga robustness. Untuk budget yang terlalu kecil (misalnya di bawah 
+Rp 500 ribu), sistem tetap menjalankan FCM namum jika tidak ada paket valid 
+yang terbentuk, akan menampilkan pesan informatif yang menyarankan 
+pengguna menaikkan budget atau mengurangi durasi. Sebaliknya, untuk 
+budget yang sangat besar (di atas Rp 50 juta), sistem te tap berjalan dengan 
+cluster Premium yang dominan dan memberikan alert untuk memastikan 
+bahwa anggaran tersebut sesuai kebutuhan pengguna. 
+ 
+3.3.6 Perancangan Sistem 
+Perancangan ini bertujuan untuk memvisualisasikan bagaimana sistem akan 
+dibangun dan berinteraksi dengan pengguna. Tahapan perancangan meliputi: 
+1. Use Case diagram 
+--- PAGE BREAK ---
+ 
+ 
+52 
+Use Case  diagram menggambarkan interaksi antara aktor (pengguna) dengan 
+sistem rekomendasi paket wisata. Diagram ini menunjukkan serangkaian 
+fungsionalitas yang disediakan sistem kepada wisatawan, mulai dari akses awal 
+hingga melihat detail rekomendasi. 
+ 
+ 
+ 
+Berikut adalah deskripsi elemen-elemen dari use case diagram: 
+a. Aktor 
+Wisatawan (Primary Actor): Pengguna utama sistem yang mencari rekomendasi 
+paket wisata. 
+ 
+b. Use Case Utama: 
+1. Akses Halaman Utama: Wisatawan membuka aplikasi web untuk memulai 
+pencarian. 
+2. Pilih Mode Pencarian:  Wisatawan memilih salah satu dari tiga 
+mode: Budget-First, Destination-First, atau Flexible Exploration. 
+3. Input Kriteria Pencarian:  Wisatawan memasukkan data yang dibutuhkan 
+(anggaran, jumlah peserta, durasi). Use case ini memiliki 
+
+--- PAGE BREAK ---
+ 
+ 
+53 
+relasi <<include>> dengan Validasi Input Data, yang berarti sistem secara 
+otomatis memvalidasi data sebelum memproses lebih lanjut. 
+4. Lihat Daftar Rekomendasi Paket: Wisatawan melihat hasil keluaran sistem 
+berupa 3 pilihan paket (Hemat, Balanced, Premium). 
+5. Lihat Detail Paket:  Wisatawan memilih salah satu paket untuk melihat 
+informasi lebih lengkap. 
+ 
+c. Use Case Perluasan (Extend):  Use case  Lihat Detail Paket  dapat diperluas 
+dengan dua fitur tambahan: 
+1. Lihat Breakdown Biaya:  Menampilkan rincian biaya per komponen 
+(akomodasi, tiket, makan, transport). 
+2. Lihat Peta Rute: Menampilkan visualisasi rute perjalanan. 
+ 
+2. Activity diagram 
+Activity diagram menggambarkan aliran proses dinamis antara wisatawan dan 
+sistem dalam menghasilkan rekomendasi paket wisata. Diagram ini 
+menggunakan format swimlane dengan dua pool (User dan Sistem) untuk 
+menunjukkan pembagian tanggung jawab dan interaksi antara aktor dengan 
+sistem secara jelas. Tiga activity diagram berikut merepresentasikan tiga 
+skenario workflow yang telah dijelaskan pada bab 3.3.5. 
+ 
+a. Activity Diagram 1: Budget-First Workflow 
+ 
+b. Activity Diagram 2: Destination-First Workflow 
+c. Activity Diagram 3: Flexible Exploration Workflow 
+ 
+3.3.7 Implementasi Sistem 
+Rancangan sistem kemudian diterjemahkan ke dalam baris kode program ( coding). 
+Lingkungan pengembangan yang digunakan meliputi: 
+1. Antarmuka dan Logika Web 
+Dibangun menggunakan Framework Laravel (PHP). Framework ini bertugas 
+menangani manajemen rute ( routing), tampilan pengguna ( frontend), dan 
+komunikasi dengan basis data. 
+ 
+--- PAGE BREAK ---
+ 
+ 
+54 
+2. Logika Komputasi Cerdas 
+Algoritma inti Fuzzy C-Means diimplementasikan menggunakan bahasa Python. 
+Modul Python ini bertugas menerima data input dari Laravel, melakukan proses 
+klasterisasi dan perhitungan jarak, lalu mengirimkan hasil rekomendasi kembali 
+ke sistem web. 
+ 
+ 
+3. Integrasi Sistem  
+Menghubungkan modul PHP dan Python agar dapat saling bertukar data secara 
+real-time saat pengguna menekan tombol pencarian. 
+ 
+3.3.8 Pengujian Sistem 
+Pengujian sistem akan dilakukan dengan metode blackbox testing , yang menguji 
+fungsionalitas sistem tanpa memperhatikan struktur internal. Fokus pengujian adalah 
+memastikan seluruh fitur, seperti pengolahan data, penanganan kesalahan input, dan 
+penyajian hasil, berfungsi dengan baik dan sesuai kebutuhan pengguna. Skenario pengujian 
+yang dilakukan antara lain: 
+ 
+1. Uji Validasi Input  
+Memastikan sistem dapat menangani input yang tidak valid (misalnya input 
+anggaran bernilai negatif atau nol). 
+ 
+2. Uji Fungsionalitas Fitur 
+Memastikan fitur utama seperti pencarian paket, filter kategori, dan peta lokasi 
+berjalan sesuai dengan spesifikasi kebutuhan. 
+ 
+3. Uji Logika Rekomendasi 
+Memastikan output paket yang dihasilkan sistem (Hemat/Balanced/Premium) 
+sesuai dengan logika pembagian klaster yang telah ditetapkan. 
+ 
+3.3.9 Evaluasi Sistem 
+Tahap evaluasi dilakukan secara menyeluruh untuk mengukur performa sistem dari 
+dua perspektif utama, yaitu kualitas pengelompokan data oleh algoritma dan tingkat 
+penerimaan pengguna terhadap aplikasi yang dibangun. 
+--- PAGE BREAK ---
+ 
+ 
+55 
+ 
+1. Evaluasi Kinerja Algoritma 
+Untuk mengukur validitas dan akurasi pengelompokan metode Fuzzy C-Means, 
+penelitian ini menggunakan  Xie-Beni Index . Penjelasan detail mengenai 
+formula perhitungan, prosedur evaluasi, dan parameter validitas algoritma telah 
+dijabarkan secara lengkap pada Sub-bab 3.3.4 Evaluasi FCM. 
+Hasil evaluasi algoritma yang akan disajikan pada Bab 4 bertujuan untuk 
+memvalidasi pemilihan jumlah klaster (c=3) dan membuktikan efektivitas rasio 
+inisialisasi centroid (0.6x, 1.0x, 1.4x) dalam menghasilkan struktur klaster yang 
+optimal (kompak dan terpisah dengan baik). 
+ 
+2. Evaluasi Kegunaan Sistem 
+Sistem dievaluasi dari sisi pengalaman pengguna ( User Experience ) 
+menggunakan metode  System Usability Scale (SUS) . Metode ini digunakan 
+untuk mengidentifikasi masalah kegunaan serta memberikan penilaian 
+kuantitatif mengenai seberapa jauh sistem dapat diterima oleh pengguna. 
+ 
+a. Prosedur Evaluasi 
+Kuesioner standar SUS yang terdiri dari  10 butir pernyataan  dibagikan 
+kepada responden yang telah mencoba menggunakan sistem rekomendasi 
+paket wisata. Responden memberikan penilaian menggunakan Skala Likert 1 
+sampai 5 (1: Sangat Tidak Setuju s.d. 5: Sangat Setuju). Instrumen kuesioner 
+yang digunakan mengacu pada indikator yang telah dijelaskan pada Sub-bab 
+2.19. 
+ 
+b. Analisis Hasil 
+Skor akhir SUS dihitung dengan menjumlahkan skor konversi dari 
+pernyataan positif (ganjil) dan negatif (genap), kemudian dikalikan 2,5 untuk 
+mendapatkan nilai dalam skala 0 -100. Interpretasi nilai kelayakan sistem 
+mengacu pada  Grade Scale  sebagaimana dipaparkan pada  Sub-bab 
+2.19 (Hidayat et al., 2025), dengan kategori sebagai berikut: 
+• Grade A: Skor ≥ 80,3 
+• Grade B: Skor 74 s.d. < 80,3 
+• Grade C: Skor 68 s.d. < 74 
+--- PAGE BREAK ---
+ 
+ 
+56 
+• Grade D: Skor 51 s.d. < 68 
+• Grade F: Skor < 51 
+ 
+ 
+ 
+c. Target Penelitian 
+Penelitian ini menargetkan skor SUS minimal masuk dalam kategori  Grade 
+B (Skor ≥ 74) untuk menyatakan bahwa sistem yang dibangun memiliki 
+tingkat kegunaan yang layak (acceptable) dan dapat diterima oleh pengguna 
+akhir. 
+--- PAGE BREAK ---
+ 
+ 56 
+DAFTAR PUSTAKA 
+Sutjiadi, R., Trianto, E. M., & Budihardjo, A. G. (2018). Surabaya Tourism Destination 
+Recommendation Using Fuzzy C -Means Algorithm. Journal of Telecommunication, 
+Electronic and Computer Engineering (JTEC), 10(2-3), 177-181.  
+Rahmanita, E., Kustiyahningsih, Y., Akbar, M. F., Rabbani, A. S., & Alfareza, R. A. (2025). 
+Clustering Madura tourism destinations using Fuzzy C -Means and Fuzzy C -Medoids with 
+Xie-Beni optimization. EPJ Web of Conferences , 344, 01056. 
+https://doi.org/10.1051/epjconf/202534401056  
+Agustina, N., & Prihandoko, P. (2018). Perbandingan Algoritma K-Means dengan Fuzzy C-
+Means Untuk Clustering Tingkat Kedisiplinan Kinerja Karyawan. Jurnal RESTI (Rekayasa 
+Sistem Dan Teknologi Informasi), 2(3), 621–626. https://doi.org/10.29207/resti.v2i3.492 
+Lu, J. (2022). Personalized Recommendation Algorithm of Smart Tourism Based on Cross-
+Media Big Data and Neural Network. Computational Intelligence and Neuroscience, 2022, 
+Article ID 9566766. https://doi.org/10.1155/2022/9566766  
+Antara. (2025, 1 Desember). BPS catat TPK hotel Kota Malang periode Oktober capai 51,53 
+persen. Antara News. Diakses dari https://www.antaranews.com 
+Godovykh, M., Fyall, A., & Pizam, A. (2025). Exploring the Impacts of Tourism on the 
+Well-Being of Local Communities. Sustainability, 17(13), 5849. 
+https://doi.org/10.3390/su17135849  
+Kenger, Ö. N., Kenger, Z. D., Özceylan, E., & Mrugalska, B. (2023). Clustering of Cities 
+Based on Their Smart Performances: A Comparative Approach of Fuzzy C -Means, K -
+Means, and K -Medoids. IEEE Access , 11, 134446 –134459. 
+https://doi.org/10.1109/ACCESS.2023.3333753  
+Oktaviani, A. B., & Yuliani, E. (2023). Dampak Pengembangan Pariwisata Terhadap 
+Kondisi Ekonomi Masyarakat. Jurnal Kajian Ruang, 3(1), 1–17.  
+--- PAGE BREAK ---
+ 
+ 
+57 
+Pramana, R. A., & Yamasari, Y. (2025). Efektivitas Algoritma Fuzzy C -Means dalam 
+Klasterisasi Bidang Minat Anak Usia Dini Menggunakan Skor Silhouette. JINACS: Journal 
+of Informatics and Computer Science, 6(4), 958–966.  
+Sekar Ayu, B., Zahro, F., Kurniawati, F., Azza, N. S., & Ainis, K. N. (2025). Healing 
+Journey: Menggunakan Pariwisata Sebagai Sarana Self -Healing. Seminar Nasional 
+Pariwisata dan Kewirausahaan (SNPK), 4, 196–206.  
+Sugiharto, E., Istiadi, & Wijaya, I. D. (2021). Sistem Rekomendasi Tempat Wisata di Kota 
+Malang dengan Metode Fuzzy Berbasis Web. Jurnal Aplikasi Dan Inovasi Ipteks 
+SOLIDITAS, 4(1), 8–15.  
+Choirunnisa, I., & Karmilah, M. (2021). Strategi Pengembangan Pariwisata Budaya Studi 
+Kasus: Kawasan Pecinan Lasem, Kampung Lawas Maspati, Desa Selumbung. Jurnal Kajian 
+Ruang, 1(2), 89-109. 
+Fardiansyah, I. (2018). Strategi Pengembangan Pariwisata di Kota Malang. Jurnal 
+Kebijakan Pembangunan, 13(2), 187-197. 
+Marigallang, R. A., Pompeng, O. D. Y., & Marchelin. (2024). Pemetaan Komponen 
+Pengeluaran Wisatawan di Kawasan Wisata Toraja. Scientific Journal of Reflection: 
+Economic, Accounting, Management and Business, 7(4), 1008-1022. 
+Badan Pusat Statistik Kabupaten Malang. (2024). Statistik Pariwisata Kabupaten Malang 
+2024. BPS Kabupaten Malang. 
+Badan Pusat Statistik Kota Malang. (2025). Perkembangan Pariwisata Kota Malang 
+Desember 2024 (Berita Resmi Statistik No. 05/02/3573/Th. XXVI). BPS Kota Malang. 
+Al-Janabee, O., & Al -Sarray, B. (2022). Evaluation Algorithms Based on Fuzzy C -means 
+for the Data Clustering of Cancer Gene Expression. Iraqi Journal for Computer Science and 
+Mathematics, 3(2), 27-41. 
+Rizquina, A. Z., & Ratnasari, C. I. (2023). Implementasi Web Scraping untuk Pengambilan 
+Data Pada Website E-Commerce. Jurnal Teknologi Dan Sistem Informasi Bisnis (JTEKSIS), 
+5(4), 377-383. 
+--- PAGE BREAK ---
+ 
+ 
+58 
+Nugraha, M. R., Guntara, R. G., Purwaamijaya, B. M., Aprilia, N. N., & Khairunisa, A. 
+(2025). Data-Driven Culinary Business: Analisis Google Maps Scraping untuk Menghadapi 
+Fenomena FOMO di Tasikmalaya. Informatics and Digital Expert (INDEX), 7(2), 86-92. 
+Putri, A. F., Manik, G., Nabila, F., & Chamidah, N. (2021). Implementasi Scraping Google 
+Scholar Menggunakan HTML DOM Untuk Pengumpulan Data Artikel Dosen UPN Veteran 
+Jakarta Berbasis Web. Prosiding Seminar Nasional Mahasiswa Bidang Ilmu Komputer dan 
+Aplikasinya (SENAMIKA), 668-678. 
+Ramadhanty, A. U. N., & Najiyah, I. (2023). Implementasi Web Scraping pada Situs Jurnal 
+Sinta Menggunakan Framework Selenium Webdriver Python. JIKA (Jurnal of Informatics) 
+Universitas Muhammadiyah Tangerang, 7(1), 29-36. 
+Rospricilia, T. A., & Ma'ady, M. N. P. (2024).  Pemodelan Integration Use Case (IUC): 
+Perancangan Use Case Diagram (UML) untuk Sistem-sistem yang Terintegrasi. INTEGER: 
+Journal of Information Technology, 9(2), 165–172. 
+ 
+Putra, B. J. M., Fu’adi, A., & Yuniarti, D. A. F. (2022). Analisa dan Rancangan Sistem 
+Informasi Pariwisata Pacitan dengan UML dan ERD. Information System for Educators and 
+Professionals, 7(1), 63-72. 
+ 
+Ambara, M. P., & Antarajaya, I. N. S. (2024). Implementasi Framework Laravel Pada Sistem 
+Informasi Wisata Berbasis Web Untuk Destinasi Nusa Penida. Jurnal Teknologi Informasi 
+dan Komputer, 10(2), 175-180. 
+ 
+Guntara, R. G. (2023). Visualisasi Data Laporan Penjualan Toko Online Melalui Pendekatan 
+Data Science Menggunakan Google Colab. Jurnal Ilmiah Multidisiplin (ULIL ALBAB), 2(6), 
+2091-2104. 
+ 
+Mutoffar, M. M., et al. (2024).  Sistem Evaluasi Pelanggaran Lalu Lintas NTMC Polri 
+Dengan Algoritma Fuzzy Logic Berbasis Python. Jurnal Media Akademik (JMA) , 2(1), 1 -
+10. 
+ 
+Kartono, F. K., Nursaadah, S., Nugroho, M. R., Tama, D. A., Mashudi, F. A., Wicaksono, 
+A., & Nasir, M. (2024).  Pengujian Black Box Testing Pada Sistem Website Osha Snack: 
+--- PAGE BREAK ---
+ 
+ 
+59 
+Pendekatan Teknik Boundary Value Analysis. Jurnal Kridatama Sains dan Teknologi, 6(2), 
+754–766. 
+ 
+Hidayat, W. F., Setiadi, A., Malau, Y., & Purnama, R. A. (2025). Usability Testing Aplikasi 
+Informasi Desa Wisata Menggunakan Metode Cognitive Walkthrough dan System Usability 
+Scale (SUS). Jurnal INSAN (Journal of Information Systems Management Innovation), 5(1), 
+18-25. 
+Lee, S. (2022). Fuzzy clustering with optimization for collaborative filtering -based 
+recommender systems. Journal of Ambient Intelligence and Humanized Computing , 13, 
+4189–4206. https://doi.org/10.1007/s12652-021-03552-8 
+Piya, S., Triki, C., Al Maimani, A., & Mokhtarzadeh, M. (2023). Optimization model for 
+designing personalized tourism packages.  Computers & Industrial Engineering , 175, 
+108839. 
+Google Cloud. (2025).  Distance Matrix API Overview . Google Maps Platform 
+Documentation. Diakses dari  https://developers.google.com/maps/documentation/distance-
+matrix/overview 
+ 
+--- PAGE BREAK ---

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Rekomendasi Wisata Malang</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app" class="min-h-screen bg-slate-50">
+        <!-- Pages will be dynamically loaded here -->
+    </div>
+
+    <!-- Templates -->
+    <template id="form-page-template">
+        <div class="min-h-screen py-12 px-4">
+            <div class="max-w-2xl mx-auto">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-3">
+                        Rencanakan Liburan Malang Anda
+                    </h1>
+                    <p class="text-lg text-gray-600">
+                        Isi detail perjalanan untuk mendapatkan rekomendasi paket wisata
+                    </p>
+                </div>
+
+                <!-- Form Card -->
+                <div class="bg-white rounded-xl shadow-lg p-8">
+                    <h2 class="text-sm font-bold text-gray-500 tracking-wider mb-6">
+                        FORMULIR PENCARIAN PAKET
+                    </h2>
+
+                    <form id="budget-form" class="space-y-6">
+                        <!-- Total Budget -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Total Anggaran (Rupiah)
+                            </label>
+                            <div class="relative">
+                                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-teal-600">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                    </svg>
+                                </div>
+                                <div class="absolute left-14 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                                    Rp
+                                </div>
+                                <input
+                                    type="text"
+                                    id="total-budget"
+                                    placeholder="Contoh: 4.500.000"
+                                    class="w-full pl-24 pr-4 py-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none transition-colors"
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <!-- Participants -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Jumlah Peserta (Orang)
+                            </label>
+                            <div class="relative">
+                                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-teal-600">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                    </svg>
+                                </div>
+                                <input
+                                    type="number"
+                                    id="participants"
+                                    class="w-full pl-14 pr-24 py-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none transition-colors"
+                                    min="1"
+                                    required
+                                />
+                                <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                                    <button
+                                        type="button"
+                                        id="participants-minus"
+                                        class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition-colors"
+                                    >
+                                        −
+                                    </button>
+                                    <button
+                                        type="button"
+                                        id="participants-plus"
+                                        class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition-colors"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Duration -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Durasi Liburan (Hari)
+                            </label>
+                            <div class="relative">
+                                <div class="absolute left-4 top-1/2 -translate-y-1/2 text-teal-600">
+                                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                                <input
+                                    type="number"
+                                    id="duration"
+                                    class="w-full pl-14 pr-24 py-3 border-2 border-gray-200 rounded-lg focus:border-teal-500 focus:outline-none transition-colors"
+                                    min="1"
+                                    required
+                                />
+                                <div class="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
+                                    <button
+                                        type="button"
+                                        id="duration-minus"
+                                        class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition-colors"
+                                    >
+                                        −
+                                    </button>
+                                    <button
+                                        type="button"
+                                        id="duration-plus"
+                                        class="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold text-gray-700 transition-colors"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Auto-calculation Panel -->
+                        <div class="bg-teal-50 rounded-lg p-6 border-2 border-teal-100">
+                            <h3 class="text-sm font-bold text-teal-900 mb-4 tracking-wider">
+                                HITUNGAN OTOMATIS:
+                            </h3>
+                            <div class="space-y-3">
+                                <div>
+                                    <div class="text-lg font-bold text-gray-900" id="budget-per-person">
+                                        Budget Per Orang: Rp 2.250.000
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        (total anggaran / orang)
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-lg font-bold text-gray-900" id="hotel-rooms">
+                                        Kebutuhan Kamar Hotel: 1 kamar
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        (1 kamar max 2 orang)
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="text-lg font-bold text-gray-900" id="meal-count">
+                                        Kebutuhan Makan: 12 kali
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        (Jumlah Orang × Jumlah Hari × 3 kali makan)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button
+                            type="submit"
+                            class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold py-4 px-6 rounded-lg transition-colors shadow-lg hover:shadow-xl text-lg"
+                        >
+                            Cari Paket Wisata
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="app.js"></script>
+</body>
+</html>
