@@ -30,17 +30,7 @@ def init_driver():
 def extract_price_from_text(text):
     text_lower = text.lower()
     
-    # 1. Periksa kata kunci gratis terlebih dahulu (dalam konteks tiket/kunjungan)
-    free_keywords = ["gratis", "free", "tidak dipungut biaya", "tidak dikenakan biaya", "tanpa biaya", "sukarela"]
-    for kw in free_keywords:
-        if kw in text_lower:
-            start_idx = text_lower.find(kw)
-            context = text_lower[max(0, start_idx - 60):min(len(text_lower), start_idx + 60)]
-            if any(tk in context for tk in ["tiket", "masuk", "htm", "karcis", "kunjung", "wisata"]):
-                if not any(neg in text_lower[max(0, start_idx - 15):start_idx] for neg in ["tidak", "bukan", "belum"]):
-                    return 0, True # Mengembalikan harga 0, is_free=True
-                    
-    # 2. Cari pola harga standar seperti "Rp XX.XXX" atau "IDR XX.XXX"
+    # 1. Cari kandidat harga non-nol terlebih dahulu
     pola_harga = r'(?:rp\.?|idr)\s?(\d{1,3}(?:[.,]\d{3})+(?:\d{3})?)'
     matches = re.finditer(pola_harga, text_lower)
     
@@ -86,12 +76,47 @@ def extract_price_from_text(text):
         except ValueError:
             continue
             
+    # 2. Cek apakah ada pernyataan "gratis" yang sangat spesifik untuk tiket masuk utama
+    has_free_ticket = False
+    free_keywords = ["gratis", "free", "tidak dipungut biaya", "tidak dikenakan biaya", "tanpa biaya", "sukarela"]
+    for kw in free_keywords:
+        if kw in text_lower:
+            start_idx = text_lower.find(kw)
+            # Gunakan window yang lebih lebar (150 karakter) karena AI Overview sering menyisipkan keterangan panjang di antara kata
+            context = text_lower[max(0, start_idx - 150):min(len(text_lower), start_idx + 150)]
+            # Pastikan kata kunci gratis merujuk ke tiket masuk, bukan hal sekunder
+            if any(tk in context for tk in ["tiket", "masuk", "htm", "karcis", "kunjung", "wisata"]):
+                if not any(neg in text_lower[max(0, start_idx - 15):start_idx] for neg in ["tidak", "bukan", "belum"]):
+                    # Pastikan bukan gratisan parkir, toilet, wifi, kamera, atau untuk anak kecil saja
+                    near_text = text_lower[max(0, start_idx - 30):start_idx + 30]
+                    if not any(bad in near_text for bad in ["parkir", "toilet", "wifi", "kamera", "foto", "anak"]):
+                        has_free_ticket = True
+                        break
+                        
+    # 3. Keputusan Utama (Prioritaskan harga bayar yang sah daripada klausa gratis anak/fasilitas)
     if candidates:
-        # Urutkan berdasarkan skor tertinggi, lalu posisi paling awal
+        # Urutkan berdasarkan skor tertinggi
         candidates.sort(key=lambda x: (-x[1], x[2]))
-        return candidates[0][0], False
-    
-    # 3. Fallback jika tidak ada Rp/IDR tapi ada angka ribuan di dekat kata kunci tiket
+        best_candidate = candidates[0]
+        
+        # Jika kandidat non-nol terbaik memiliki keyakinan positif (score >= 5),
+        # maka tempat ini berbayar dan kita ambil harga ini!
+        if best_candidate[1] >= 5:
+            return best_candidate[0], False
+            
+        # Jika semua kandidat non-nol memiliki skor rendah/negatif,
+        # tetapi ada pernyataan tiket masuk gratis yang kuat, kembalikan gratis (Rp 0)
+        if has_free_ticket:
+            return 0, True
+            
+        # Jika tidak ada konfirmasi gratis yang kuat, kembalikan saja kandidat terbaik tersebut
+        return best_candidate[0], False
+        
+    # Jika tidak ada kandidat Rp/IDR, barulah kita kembalikan gratis jika terdeteksi
+    if has_free_ticket:
+        return 0, True
+        
+    # 4. Fallback jika tidak ada Rp/IDR tapi ada angka ribuan di dekat kata kunci tiket
     pola_angka = r'\b(\d{1,3}\.\d{3})\b'
     matches_angka = re.finditer(pola_angka, text_lower)
     candidates_angka = []
@@ -122,6 +147,10 @@ def extract_price_from_text(text):
         except ValueError:
             continue
             
+    if candidates_angka:
+        candidates_angka.sort(key=lambda x: (-x[1], x[2]))
+        return candidates_angka[0][0], False
+        
     return None, False
 
 def find_sge_container(driver):
@@ -146,8 +175,16 @@ def find_sge_container(driver):
                             ext_links = []
                             for l in links:
                                 href = l.get_attribute("href")
-                                if href and "google.com" not in href and href.startswith("http"):
-                                    ext_links.append(href)
+                                if href and href.startswith("http"):
+                                    domain_parsed = urllib.parse.urlparse(href).netloc.lower()
+                                    # Filter out all Google-owned system domains
+                                    is_google = False
+                                    for g_domain in ["google", "gstatic", "youtube"]:
+                                        if g_domain in domain_parsed:
+                                            is_google = True
+                                            break
+                                    if not is_google:
+                                        ext_links.append(href)
                             if ext_links:
                                 return parent, p_text, ext_links
         except:
@@ -182,8 +219,7 @@ def get_price_from_google(driver, keyword, target_domain=None):
                 primary_link = sge_links[0]
                 domain = urllib.parse.urlparse(primary_link).netloc.lower()
                 clean_domain = domain[4:] if domain.startswith("www.") else domain
-                # Tambahkan penanda bahwa ini dari AI
-                clean_domain = f"Google AI ({clean_domain})"
+                # Langsung mengembalikan nama domain rujukan asli dari AI
                 return harga_int, clean_domain, primary_link
         
         # 2. FALLBACK KE ORGANIC PENCARIAN GOOGLE JIKA SGE TIDAK ADA ATAU GAGAL
@@ -226,13 +262,6 @@ def get_price_from_google(driver, keyword, target_domain=None):
                     return harga_int, clean_domain, link_url
             except:
                 continue
-        
-        # Fallback jika target_domain TIDAK ditentukan (Google General), baru kita parsing seluruh halaman
-        if not target_domain:
-            body_text = driver.find_element(By.TAG_NAME, "body").text
-            harga_int, is_free = extract_price_from_text(body_text)
-            if harga_int is not None:
-                return harga_int, "Google Snippet", search_url
                     
         return None, "N/A", ""
         
@@ -266,7 +295,7 @@ def main_price_scraper():
 
     # Inisialisasi kolom jika belum ada (ditambahkan kolom Link_Sumber untuk pembuktian sidang)
     if 'Estimasi_Harga' not in df.columns:
-        df['Estimasi_Harga'] = 0
+        df['Estimasi_Harga'] = pd.NA
     if 'Sumber_Data' not in df.columns:
         df['Sumber_Data'] = 'N/A'
     if 'Link_Sumber' not in df.columns:
@@ -284,28 +313,24 @@ def main_price_scraper():
     
     try:
         for index, row in df.iterrows():
-            # Tentukan apakah data harga saat ini dinilai "tidak meyakinkan" (suspicious)
+            # HANYA memproses data yang saat ini terisi harga 0 atau kosong (NaN/Null)
+            # untuk memverifikasi ulang apakah tempat wisata tersebut gratis atau sebenarnya berbayar!
+            # Semua data harga berbayar lainnya (> 0) akan dilewati!
             estimasi = row.get('Estimasi_Harga', 0)
-            sumber = row.get('Sumber_Data', 'N/A')
             
-            is_suspicious = False
-            if pd.isna(estimasi) or estimasi is None:
-                is_suspicious = True
-            elif estimasi == 0:
-                # Harga 0 (gratis) dianggap mencurigakan jika tidak memiliki sumber rujukan terverifikasi (N/A)
-                is_suspicious = (sumber == 'N/A' or pd.isna(sumber) or sumber == '')
-            elif estimasi <= 5000:
-                # Harga <= 5.000 sangat dicurigai sebagai tarif parkir kendaraan, bukan tiket masuk utama
-                is_suspicious = True
-            elif estimasi > 150000:
-                # Harga > 150.000 sangat dicurigai sebagai paket tur besar atau kamar hotel terdekat
-                is_suspicious = True
-            elif sumber == 'N/A' or pd.isna(sumber) or sumber == '':
-                # Ada data harga tetapi tidak memiliki bukti sumber tautan yang valid
-                is_suspicious = True
-                
-            # Jika data harga saat ini dinilai SUDAH MEYAKINKAN (tidak suspicious), maka lewati!
-            if not is_suspicious:
+            should_process = False
+            if pd.isna(estimasi) or estimasi is None or estimasi == '':
+                should_process = True
+            else:
+                try:
+                    price_val = int(estimasi)
+                    if price_val == 0:
+                        should_process = True
+                except:
+                    pass
+            
+            # Jika TIDAK masuk kriteria harga == 0 atau kosong, lewati!
+            if not should_process:
                 continue
                 
             # Restart browser berkala setiap 15 pencarian agar memori bersih & terhindar dari block
@@ -339,8 +364,10 @@ def main_price_scraper():
                 else:
                     print(f"Berhasil! (Rp {harga_ditemukan:,} via {domain_ditemukan})")
             else:
-                print("Nihil")
-                # Jika nihil, biarkan data lama tetap utuh agar tidak menimpa progress yang sudah ada
+                print("Nihil (Diatur ke NaN/Kosong karena tidak dapat diverifikasi)")
+                df.at[index, 'Estimasi_Harga'] = pd.NA
+                df.at[index, 'Sumber_Data'] = 'N/A'
+                df.at[index, 'Link_Sumber'] = ''
             
             # Jeda manusiawi antar pencarian
             time.sleep(random.uniform(4, 7))
