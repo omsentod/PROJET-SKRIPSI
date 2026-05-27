@@ -106,7 +106,7 @@ def open_photo_gallery(driver, wait):
     return False
 
 def get_gallery_images(driver, limit=5):
-    """Mengambil URL gambar unik dari galeri foto dan mengubah ke resolusi tinggi."""
+    """Mengambil URL gambar unik dari galeri foto (div style background-image & img) dan mengubah ke resolusi tinggi."""
     image_urls = []
     
     # Mencari container scroll galeri agar bisa lazy-load gambar
@@ -129,21 +129,51 @@ def get_gallery_images(driver, limit=5):
             
     # Lakukan scrolling beberapa kali agar elemen gambar termuat
     for scroll_idx in range(6):
+        # 1. Cari di elemen style background-image (Sangat umum di Google Maps baru)
+        elements_with_style = driver.find_elements(By.XPATH, "//*[@style]")
+        for el in elements_with_style:
+            try:
+                style = el.get_attribute("style")
+                if style and "googleusercontent.com" in style:
+                    # Abaikan foto profil user
+                    if "/a/" in style or "=s36" in style or "=s40" in style or "=s44" in style or "=s48" in style or "=s64" in style:
+                        continue
+                        
+                    # Ekstrak url dari format background-image: url("...")
+                    match = re.search(r'url\("?([^"\)]+)"?\)', style)
+                    if match:
+                        src = match.group(1)
+                        if src.startswith("//"):
+                            src = "https:" + src
+                            
+                        # Konversi ke resolusi tinggi (=w1080)
+                        if '=' in src:
+                            base_url = src.split('=')[0]
+                            high_res = base_url + "=w1080"
+                        else:
+                            high_res = src + "=w1080"
+                            
+                        if high_res not in image_urls:
+                            image_urls.append(high_res)
+                            if len(image_urls) >= limit:
+                                return image_urls
+            except Exception:
+                continue
+
+        # 2. Cari di img tags (Sebagai fallback)
         imgs = driver.find_elements(By.TAG_NAME, "img")
         for img in imgs:
             try:
                 src = img.get_attribute("src")
                 if src and ("googleusercontent.com" in src or "streetviewpixels" in src):
-                    # Filter out foto profil pengguna (kecil, ada /a/ atau ukuran kecil)
                     if "/a/" in src or "=s36" in src or "=s40" in src or "=s44" in src or "=s48" in src or "=s64" in src:
                         continue
                     
-                    # Konversi parameter ukuran ke resolusi tinggi (=w1080)
                     if '=' in src:
                         base_url = src.split('=')[0]
                         high_res = base_url + "=w1080"
                     else:
-                        high_res = src
+                        high_res = src + "=w1080"
                         
                     if high_res not in image_urls:
                         image_urls.append(high_res)

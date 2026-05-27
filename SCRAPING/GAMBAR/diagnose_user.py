@@ -99,16 +99,60 @@ def main():
             driver.save_screenshot("after_tab_click.png")
             print("Saved after_tab_click.png")
             
-            # Print all visible images in gallery
-            imgs_gallery = driver.find_elements(By.TAG_NAME, "img")
-            print(f"\n--- IMAGES AFTER CLICKING TAB (Total: {len(imgs_gallery)}) ---")
-            for idx, img in enumerate(imgs_gallery):
-                try:
-                    src = img.get_attribute("src")
-                    alt = img.get_attribute("alt")
-                    print(f"[{idx}] src: {src[:90]}... | alt: '{alt}'")
-                except:
-                    pass
+            # Use the new get_gallery_images logic to extract 5 high-res URLs
+            import re
+            
+            def get_gallery_images_test(driver, limit=5):
+                image_urls = []
+                # 1. Background image styles
+                elements_with_style = driver.find_elements(By.XPATH, "//*[@style]")
+                print(f"Inspecting {len(elements_with_style)} styled elements for background-image...")
+                for el in elements_with_style:
+                    try:
+                        style = el.get_attribute("style")
+                        if style and "googleusercontent.com" in style:
+                            if "/a/" in style or "=s36" in style or "=s40" in style or "=s44" in style or "=s48" in style or "=s64" in style:
+                                continue
+                            match = re.search(r'url\("?([^"\)]+)"?\)', style)
+                            if match:
+                                src = match.group(1)
+                                if src.startswith("//"): src = "https:" + src
+                                if '=' in src:
+                                    base_url = src.split('=')[0]
+                                    high_res = base_url + "=w1080"
+                                else:
+                                    high_res = src + "=w1080"
+                                if high_res not in image_urls:
+                                    image_urls.append(high_res)
+                                    if len(image_urls) >= limit: return image_urls
+                    except:
+                        pass
+                
+                # 2. Standard img tags as fallback
+                imgs = driver.find_elements(By.TAG_NAME, "img")
+                print(f"Inspecting {len(imgs)} img tags...")
+                for img in imgs:
+                    try:
+                        src = img.get_attribute("src")
+                        if src and ("googleusercontent.com" in src or "streetviewpixels" in src):
+                            if "/a/" in src or "=s36" in src or "=s40" in src or "=s44" in src or "=s48" in src or "=s64" in src:
+                                continue
+                            if '=' in src:
+                                base_url = src.split('=')[0]
+                                high_res = base_url + "=w1080"
+                            else:
+                                high_res = src + "=w1080"
+                            if high_res not in image_urls:
+                                image_urls.append(high_res)
+                                if len(image_urls) >= limit: return image_urls
+                    except:
+                        pass
+                return image_urls
+
+            extracted_urls = get_gallery_images_test(driver, 5)
+            print(f"\n--- SUCCESS! EXTRACTED {len(extracted_urls)} HIGH-RES IMAGE URLS ---")
+            for idx, url in enumerate(extracted_urls):
+                print(f"[{idx+1}] {url[:100]}...")
         else:
             print("No tab button found. Trying cover photo click...")
             # Try to click the cover photo button
