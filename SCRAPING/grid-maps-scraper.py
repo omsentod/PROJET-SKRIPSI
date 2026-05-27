@@ -21,10 +21,7 @@ from shapely.ops import unary_union
 # 1. PENGATURAN GEOSPATIAL & GRID GENERATOR
 # ==============================================================================
 def generate_grid_malang_raya(topojson_path='jawa-timur-simplified-topo.json', step=0.05):
-    """
-    Membaca TopoJSON Jatim dan menghasilkan daftar koordinat (lat, lng) di Malang Raya.
-    step = 0.05 derajat setara dengan kerapatan grid sekitar ~5.6 km.
-    """
+
     if not os.path.exists(topojson_path):
         print(f"[ERROR] File '{topojson_path}' tidak ditemukan!")
         return []

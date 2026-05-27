@@ -11,7 +11,7 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 
 # ================= KONFIGURASI =================
-FILE_INPUT = 'wisataV2.xlsx' 
+FILE_INPUT = 'data new/wisataV2.xlsx' 
 KATEGORI = 'wisata' # 'wisata' atau 'hotel'
 # ===============================================
 

@@ -15,6 +15,8 @@ from selenium.common.exceptions import StaleElementReferenceException, TimeoutEx
 def get_lat_long_from_url(url):
     if not url: return None, None
     try:
+            # Pola koordinat pada URL Google Maps: !3d<latitude>!4d<longitude>
+
         coords = re.search(r'!3d([-0-9.]+)!4d([-0-9.]+)', url)
         if coords:
             return coords.group(1), coords.group(2)
@@ -79,15 +81,8 @@ def extract_category_safe(full_text_list):
 def scroll_google_maps_feed(driver, max_scrolls=100):
     """
     Scroll feed Google Maps sampai benar-benar mentok.
-    
-    Improvements:
-    - Mendeteksi "You've reached the end" message
-    - Scroll lebih lambat dengan jeda render
-    - Menghitung stagnasi scroll yang lebih akurat
-    - Menangani lazy loading
     """
     try:
-        # Tunggu feed muncul dengan timeout lebih lama
         wait = WebDriverWait(driver, 15)
         scrollable_div = wait.until(
             EC.presence_of_element_located((By.CSS_SELECTOR, 'div[role="feed"]'))
@@ -95,7 +90,7 @@ def scroll_google_maps_feed(driver, max_scrolls=100):
         print("✓ Feed ditemukan, mulai scrolling...")
         
         last_height = driver.execute_script("return arguments[0].scrollHeight", scrollable_div)
-        stagnant_count = 0  # Hitung berapa kali height tidak berubah
+        stagnant_count = 0  
         scroll_count = 0
         
         while scroll_count < max_scrolls:
@@ -105,12 +100,9 @@ def scroll_google_maps_feed(driver, max_scrolls=100):
                 scrollable_div
             )
             
-            # Tunggu lebih lama untuk render (PENTING!)
-            time.sleep(2.5)  # Naikkan dari 1.5 detik
+            time.sleep(2.5)  
             
-            # Cek apakah sudah sampai akhir dengan mencari pesan "end"
             try:
-                # Google Maps menampilkan pesan berbeda tergantung bahasa
                 end_messages = [
                     "You've reached the end of the list",
                     "Anda telah mencapai akhir daftar",
@@ -131,18 +123,16 @@ def scroll_google_maps_feed(driver, max_scrolls=100):
                 stagnant_count += 1
                 print(f"⚠ Stagnant {stagnant_count}/5", end=" ", flush=True)
                 
-                # Jika 5x berturut-turut tidak ada perubahan, stop
                 if stagnant_count >= 5:
                     print("\n✓ Tidak ada data baru setelah 5 percobaan")
                     break
                     
-                # Coba scroll sedikit ke atas lalu ke bawah lagi (trick untuk trigger lazy load)
                 driver.execute_script("arguments[0].scrollBy(0, -100);", scrollable_div)
                 time.sleep(0.5)
                 driver.execute_script("arguments[0].scrollBy(0, 100);", scrollable_div)
                 
             else:
-                stagnant_count = 0  # Reset counter jika ada progress
+                stagnant_count = 0 
                 last_height = new_height
                 print(".", end="", flush=True)
             

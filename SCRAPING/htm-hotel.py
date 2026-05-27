@@ -50,7 +50,6 @@ def get_price_from_google(driver, keyword, target_domain=None):
         # Temukan semua elemen h3 di dalam container utama #rso (hasil organik Google)
         headings = driver.find_elements(By.CSS_SELECTOR, "#rso h3")
         
-        # Pola regex harga tiket/kamar
         pola_harga = r'(?:Rp\.?|IDR)\s?(\d{1,3}(?:[.,]\d{3})+(?:\d{3})?)'
         
         for h3_el in headings:
