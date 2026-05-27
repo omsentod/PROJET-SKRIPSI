@@ -478,12 +478,62 @@ for _, row in df_summary.iterrows():
     
     print(f"{row['Label']:<22} {total:>7} {km:>5} {km_pct:>6} {kab:>6} {kab_pct:>7} {kb:>5} {kb_pct:>6} {luar:>3} {luar_pct:>6}")
 
-# Simpan ke CSV dan Excel
+# Simpan ke CSV dan Excel (Terpisah per Sheet untuk Kebutuhan Skripsi)
 path_csv = os.path.join(OUTPUT_DIR, 'distribusi_summary.csv')
 path_xlsx = os.path.join(OUTPUT_DIR, 'distribusi_summary.xlsx')
+
+# 1. Simpan CSV (Ringkasan Konsolidasi)
 df_summary.to_csv(path_csv, index=False)
-df_summary.to_excel(path_xlsx, index=False)
-print(f"\n✓ Ringkasan tersimpan di: {path_csv} dan {path_xlsx}")
+
+# 2. Buat tabel spasial LAMA (Tabel 4.2) dan V2 (Tabel 4.4) berformat rapi untuk Excel
+def buat_tabel_skripsi_excel(df_versi):
+    rows = []
+    total_km = total_kab = total_kb = total_luar = total_all = 0
+    for _, row in df_versi.iterrows():
+        t = row['Total']
+        km = row['Kota Malang']
+        kab = row['Kabupaten Malang']
+        kb = row['Kota Batu']
+        luar = row['Luar Malang Raya']
+        
+        total_km += km
+        total_kab += kab
+        total_kb += kb
+        total_luar += luar
+        total_all += t
+        
+        rows.append({
+            'Kategori': row['Kategori'],
+            'Kota Malang': f"{km} ({km/t*100:.1f}%)" if t > 0 else "0 (0.0%)",
+            'Kabupaten Malang': f"{kab} ({kab/t*100:.1f}%)" if t > 0 else "0 (0.0%)",
+            'Kota Batu': f"{kb} ({kb/t*100:.1f}%)" if t > 0 else "0 (0.0%)",
+            'Luar Malang Raya': f"{luar} ({luar/t*100:.1f}%)" if t > 0 else "0 (0.0%)",
+            'Total': t
+        })
+        
+    if total_all > 0:
+        rows.append({
+            'Kategori': 'Total',
+            'Kota Malang': f"{total_km} ({total_km/total_all*100:.1f}%)",
+            'Kabupaten Malang': f"{total_kab} ({total_kab/total_all*100:.1f}%)",
+            'Kota Batu': f"{total_kb} ({total_kb/total_all*100:.1f}%)",
+            'Luar Malang Raya': f"{total_luar} ({total_luar/total_all*100:.1f}%)",
+            'Total': total_all
+        })
+    return pd.DataFrame(rows)
+
+df_tabel_4_2 = buat_tabel_skripsi_excel(df_summary[df_summary['Versi'] == 'Lama'])
+df_tabel_4_4 = buat_tabel_skripsi_excel(df_summary[df_summary['Versi'] == 'V2'])
+
+# 3. Simpan ke Excel dengan Multi-Sheet
+with pd.ExcelWriter(path_xlsx, engine='openpyxl') as writer:
+    df_summary.to_excel(writer, sheet_name='Ringkasan Konsolidasi', index=False)
+    if not df_tabel_4_2.empty:
+        df_tabel_4_2.to_excel(writer, sheet_name='Tabel 4.2 - Spasial LAMA', index=False)
+    if not df_tabel_4_4.empty:
+        df_tabel_4_4.to_excel(writer, sheet_name='Tabel 4.4 - Spasial V2', index=False)
+
+print(f"\n✓ Ringkasan tersimpan di: {path_csv} dan {path_xlsx} (Multi-Sheet)")
 
 # ==============================================================================
 # 5. FORMAT MARKDOWN SIAP COPY KE SKRIPSI
