@@ -27,6 +27,39 @@ def init_driver():
     driver.set_page_load_timeout(40) # Timeout loading halaman 40 detik
     return driver
 
+def is_relevant(text, name):
+    # Bersihkan nama tempat dari tanda baca dan karakter khusus
+    name_clean = re.sub(r'[\(\)\-\:\,\.\/\|]', ' ', name.lower())
+    
+    # Ambil kata-kata penting yang panjangnya > 2 karakter
+    # Abaikan kata umum/wisata yang tidak spesifik
+    stopwords = ["wisata", "obyek", "objek", "kota", "kabupaten", "malang", "batu", "area", "tempat", "lokasi", "desa", "kecamatan", "dan"]
+    words = [w for w in name_clean.split() if len(w) > 2 and w not in stopwords]
+    
+    if not words:
+        return True # Jika tidak ada kata kunci tersisa, anggap relevan
+        
+    text_lower = text.lower()
+    
+    # Hitung jumlah kata kunci yang cocok di dalam teks
+    match_count = 0
+    for w in words:
+        # Gunakan regex word boundary agar kecocokan kata lebih presisi
+        if re.search(r'\b' + re.escape(w) + r'\b', text_lower):
+            match_count += 1
+        elif w in text_lower:
+            # Fallback jika tidak ada boundary (misal tersambung tanda baca)
+            match_count += 0.5
+            
+    # Aturan ambang batas (Threshold) pencocokan:
+    # - Jika hanya ada 1 kata kunci penting: wajib cocok (match_count >= 1)
+    # - Jika ada 2 kata kunci penting: wajib cocok minimal 1 (match_count >= 1)
+    # - Jika ada 3 atau lebih kata kunci penting: wajib cocok minimal 1.5 (match_count >= 1.5)
+    if len(words) <= 2:
+        return match_count >= 1
+    else:
+        return match_count >= 1.5
+
 def extract_price_from_text(text):
     text_lower = text.lower()
     
@@ -191,7 +224,7 @@ def find_sge_container(driver):
             continue
     return None, "", []
 
-def get_price_from_google(driver, keyword, target_domain=None):
+def get_price_from_google(driver, keyword, name, target_domain=None):
     try:
         # Gunakan navigasi langsung seperti maps scraper demi keamanan & efisiensi
         search_url = f"https://www.google.com/search?q={urllib.parse.quote(keyword)}"
@@ -213,14 +246,18 @@ def get_price_from_google(driver, keyword, target_domain=None):
         # 1. COBA EKSTRAK DARI GOOGLE AI OVERVIEW (SGE) DAHULU
         sge_container, sge_text, sge_links = find_sge_container(driver)
         if sge_container:
-            print("\n   -> AI Overview terdeteksi! Mengekstrak data...", end="", flush=True)
-            harga_int, is_free = extract_price_from_text(sge_text)
-            if harga_int is not None:
-                primary_link = sge_links[0]
-                domain = urllib.parse.urlparse(primary_link).netloc.lower()
-                clean_domain = domain[4:] if domain.startswith("www.") else domain
-                # Langsung mengembalikan nama domain rujukan asli dari AI
-                return harga_int, clean_domain, primary_link
+            # Pastikan Ringkasan AI tersebut memang membicarakan tempat wisata yang kita cari!
+            if is_relevant(sge_text, name):
+                print("\n   -> AI Overview terdeteksi & Relevan! Mengekstrak data...", end="", flush=True)
+                harga_int, is_free = extract_price_from_text(sge_text)
+                if harga_int is not None:
+                    primary_link = sge_links[0]
+                    domain = urllib.parse.urlparse(primary_link).netloc.lower()
+                    clean_domain = domain[4:] if domain.startswith("www.") else domain
+                    # Langsung mengembalikan nama domain rujukan asli dari AI
+                    return harga_int, clean_domain, primary_link
+            else:
+                print("\n   -> AI Overview terdeteksi tetapi tidak relevan (membahas tempat lain). Melewati...", end="", flush=True)
         
         # 2. FALLBACK KE ORGANIC PENCARIAN GOOGLE JIKA SGE TIDAK ADA ATAU GAGAL
         headings = driver.find_elements(By.CSS_SELECTOR, "#rso h3")
@@ -254,12 +291,15 @@ def get_price_from_google(driver, keyword, target_domain=None):
                     container = h3_el.find_element(By.XPATH, "./../../..")
                 
                 text = container.text
+                heading_text = h3_el.text
                 
-                # Gunakan extract_price_from_text agar skoring cerdas juga berlaku pada hasil organik
-                harga_int, is_free = extract_price_from_text(text)
-                if harga_int is not None:
-                    clean_domain = domain[4:] if domain.startswith("www.") else domain
-                    return harga_int, clean_domain, link_url
+                # Pastikan hasil pencarian organik ini relevan dengan tempat yang dicari!
+                if is_relevant(heading_text, name) or is_relevant(text, name):
+                    # Gunakan extract_price_from_text agar skoring cerdas juga berlaku pada hasil organik
+                    harga_int, is_free = extract_price_from_text(text)
+                    if harga_int is not None:
+                        clean_domain = domain[4:] if domain.startswith("www.") else domain
+                        return harga_int, clean_domain, link_url
             except:
                 continue
                     
@@ -313,10 +353,13 @@ def main_price_scraper():
     
     try:
         for index, row in df.iterrows():
-            # HANYA memproses data yang saat ini terisi harga 0 atau kosong (NaN/Null)
-            # untuk memverifikasi ulang apakah tempat wisata tersebut gratis atau sebenarnya berbayar!
-            # Semua data harga berbayar lainnya (> 0) akan dilewati!
+            # HANYA memproses data yang:
+            # 1. Kosong (NaN/Null)
+            # 2. Atau terisi harga 0 (Gratis) tetapi belum terverifikasi (Sumber Data masih 'N/A' atau kosong)
+            # Jika harga 0 dan sumber datanya sudah valid (bukan 'N/A'), berarti tempat ini sudah terbukti gratis 
+            # dan tidak akan dicari ulang secara terus-menerus! Semua data berbayar (> 0) juga dilewati!
             estimasi = row.get('Estimasi_Harga', 0)
+            sumber = str(row.get('Sumber_Data', 'N/A')).strip()
             
             should_process = False
             if pd.isna(estimasi) or estimasi is None or estimasi == '':
@@ -325,11 +368,12 @@ def main_price_scraper():
                 try:
                     price_val = int(estimasi)
                     if price_val == 0:
-                        should_process = True
+                        if sumber == 'N/A' or sumber == '':
+                            should_process = True
                 except:
                     pass
             
-            # Jika TIDAK masuk kriteria harga == 0 atau kosong, lewati!
+            # Jika TIDAK masuk kriteria pencarian ulang, lewati!
             if not should_process:
                 continue
                 
@@ -352,7 +396,7 @@ def main_price_scraper():
             
             print(f"\n[{index+1}/{len(df)}] Menelusuri {nama}:")
             print("   -> Mencoba Google Search... ", end="", flush=True)
-            harga_ditemukan, domain_ditemukan, link_ditemukan = get_price_from_google(driver, query, None)
+            harga_ditemukan, domain_ditemukan, link_ditemukan = get_price_from_google(driver, query, nama, None)
             
             if harga_ditemukan is not None:
                 df.at[index, 'Estimasi_Harga'] = harga_ditemukan
