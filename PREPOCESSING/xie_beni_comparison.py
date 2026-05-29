@@ -7,7 +7,7 @@ BASE_DIR = "/Users/macbookpro/Documents/GITHUB/PROJET-SKRIPSI/PREPOCESSING"
 DATA_DIR = os.path.join(BASE_DIR, "DATA&HTM-NEW")
 
 # Inputs
-RAW_WISATA_FILE = os.path.join(DATA_DIR, "wisataV2_updated.xlsx")
+RAW_WISATA_FILE = os.path.join(DATA_DIR, "wisataV2-htm.xlsx")
 CLEAN_WISATA_FILE = os.path.join(BASE_DIR, "wisata_clean.xlsx")
 
 def custom_fcm(data, c=3, m=2.0, max_iter=150, error=1e-5):

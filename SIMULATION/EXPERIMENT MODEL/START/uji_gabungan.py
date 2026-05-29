@@ -1,17 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-uji_gabungan.py — Uji Gabungan Algoritma FCM, Validasi Xie-Beni, & Rekomendasi
-============================================================================
-File ini menggabungkan seluruh komponen matematika dan alur sistem rekomendasi:
-1. Pembersihan & Normalisasi Otomatis Dataset Excel.
-2. Algoritma Fuzzy C-Means (FCM) Manual murni berbasis NumPy.
-3. Evaluasi & Validasi Klaster menggunakan Xie-Beni Index (XBI).
-4. Simulasi pencarian jumlah klaster optimal (c = 2, 3, 4, 5).
-5. Sistem Rekomendasi Paket Wisata (Workflow Budget-First) dengan inisialisasi
-   Centroid berbasis Anggaran (Skema Rasio Centroid A-E) dan tarif Gojek Malang Raya.
 
-Dijalankan langsung di terminal secara interaktif!
-"""
 
 import os
 import math
@@ -224,9 +211,9 @@ def find_and_load_excel():
     ]
     
     files = {
-        "wisata": ["wisataV2-htm.xlsx", "wisata.xlsx", "wisata_normalized.xlsx"],
-        "hotel": ["hotelV2-htm.xlsx", "hotel.xlsx", "hotel_normalized.xlsx"],
-        "kuliner": ["tempat_makanV2-htm.xlsx", "tempat-makan.xlsx", "makan_normalized.xlsx"]
+        "wisata": ["wisata_clean.xlsx"],
+        "hotel": ["hotel_clean.xlsx"],
+        "kuliner": ["tempat_makan_clean.xlsx"]
     }
     
     loaded_data = {}
@@ -464,7 +451,6 @@ def menu_recommendation(datasets):
     print(f"    • Target Hemat    ({ratios[0]}x): Rp {allocations['akomodasi'] * ratios[0]:,.0f}")
     print(f"    • Target Balanced ({ratios[1]}x): Rp {allocations['akomodasi'] * ratios[1]:,.0f}")
     print(f"    • Target Premium  ({ratios[2]}x): Rp {allocations['akomodasi'] * ratios[2]:,.0f}")
-    print()
     print(f" 🎯 Kategori Wisata (Total Alokasi: Rp {allocations['wisata']:,.0f}):")
     print(f"    • Target Hemat    ({ratios[0]}x): Rp {allocations['wisata'] * ratios[0]:,.0f}")
     print(f"    • Target Balanced ({ratios[1]}x): Rp {allocations['wisata'] * ratios[1]:,.0f}")
@@ -483,23 +469,50 @@ def menu_recommendation(datasets):
         "kuliner": {0: [], 1: [], 2: []}
     }
     
+    xbi_comparison = {
+        "hotel": {},
+        "wisata": {},
+        "kuliner": {}
+    }
+    
+    # Ambil spread dari skema rasio aktif (misal scheme B: 0.6, 1.0, 1.4 -> spread = 0.4)
+    spread = 1.0 - ratios[0]
+    
     for key in ["hotel", "wisata", "kuliner"]:
         df = datasets[key].copy()
         prices = df["Estimasi_Harga"].values
         
         # Hitung centroid awal berdasarkan rasio skema dan anchor
         cat_anchor = hotel_anchor if key == "hotel" else (wisata_anchor if key == "wisata" else kuliner_anchor)
-        init_centers = np.array([cat_anchor * r for r in ratios])
         
-        # Jalankan FCM Terpandu Centroid Awal
-        centers, U, labels, _ = fuzzy_c_means_manual(
-            prices, n_clusters=3, m=2.0, init_centroids=init_centers
-        )
+        # Uji coba klaster c = 2, 3, 4, 5 dengan anchor budget terpandu
+        for c in [2, 3, 4, 5]:
+            # Distribusikan centroid secara linear di sekitar 1.0 menggunakan spread skema aktif
+            c_ratios = np.linspace(1.0 - spread, 1.0 + spread, c)
+            init_centers = np.array([cat_anchor * r for r in c_ratios])
+            
+            # Jalankan FCM Terpandu Centroid Awal
+            centers, U, labels, _ = fuzzy_c_means_manual(
+                prices, n_clusters=c, m=2.0, init_centroids=init_centers
+            )
+            
+            # Hitung Xie-Beni Index untuk klaster terpandu FCM (Budget-Anchored)
+            xb_val, sigma_val, sep_val = calculate_xie_beni(prices, centers, U, m=2.0)
+            xbi_comparison[key][c] = {
+                "xb": xb_val,
+                "sigma": sigma_val,
+                "sep": sep_val,
+                "centers": centers,
+                "labels": labels
+            }
         
-        df["Cluster"] = labels
+        # Gunakan hasil c = 3 (Hemat, Balanced, Premium) untuk alur rekomendasi selanjutnya
+        res_c3 = xbi_comparison[key][3]
+        df["Cluster"] = res_c3["labels"]
+        centers_c3 = res_c3["centers"]
         
         # Sorting agar Cluster 0=Hemat, 1=Balanced, 2=Premium
-        sorted_indices = np.argsort(centers.flatten())
+        sorted_indices = np.argsort(centers_c3.flatten())
         
         for i in range(3):
             original_cluster_id = sorted_indices[i]
@@ -517,7 +530,34 @@ def menu_recommendation(datasets):
                 best_items = items_in_c.nsmallest(15, "distance_to_target")
                 
             candidates[key][i] = best_items.to_dict("records")
-
+ 
+    # Tampilkan Evaluasi & Perbandingan Xie-Beni untuk c = 2 s/d 5 (Budget-Anchored)
+    print("\n📈 PERBANDINGAN KUALITAS KLASTER c = 2 s/d 5 (BUDGET-ANCHORED FCM)")
+    print("=" * 75)
+    for key in ["hotel", "wisata", "kuliner"]:
+        disp_name = "Akomodasi (Hotel)" if key == "hotel" else ("Wisata" if key == "wisata" else "Kuliner (Makan)")
+        print(f"\n📊 Kategori: {disp_name.upper()}")
+        print("-" * 75)
+        print(f"{'c':<5} | {'Xie-Beni Index':<18} | {'Total Variansi (σ)':<20} | {'Separasi (sep)':<15}")
+        print("-" * 75)
+        
+        min_xb = float('inf')
+        best_c = 3
+        for c in [2, 3, 4, 5]:
+            metrics = xbi_comparison[key][c]
+            print(f"{c:<5} | {metrics['xb']:<18.6f} | {metrics['sigma']:<20,.2f} | {metrics['sep']:<15,.2f}")
+            if metrics['xb'] < min_xb:
+                min_xb = metrics['xb']
+                best_c = c
+        print("-" * 75)
+        print(f"🌟 Nilai c Optimal untuk {disp_name} di bawah bimbingan anggaran adalah c = {best_c}")
+        print(f"   (Xie-Beni Index Terkecil: {min_xb:.6f})")
+        print("-" * 75)
+        
+    print("\n💡 Catatan: Rasio centroid awal untuk perbandingan di atas di-generate secara linier")
+    print(f"   di sekitar 1.0 dengan lebar spread Skema {scheme_choice} (Spread: ±{spread:.2f}).")
+    print("=" * 75)
+    
     print("\n🔄 Memproses pencarian kombinasi rute terdekat dan penyaringan budget...")
     
     package_options = {0: [], 1: [], 2: []}

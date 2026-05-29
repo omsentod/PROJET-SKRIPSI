@@ -1,0 +1,63 @@
+==============================================================================
+  LAPORAN RINGKASAN PREPROCESSING DATA — SKRIPSI SISTEM REKOMENDASI WISATA
+  Dijalankan pada: 2026-05-29 12:00:47
+==============================================================================
+
+KATEGORI       | DATA AWAL |  DIBUANG |   BERSIH
+----------------------------------------------
+Hotel          |       467 |        0 |      467
+Kuliner        |       640 |        0 |      640
+Wisata         |       629 |       18 |      611
+----------------------------------------------
+TOTAL          |      1736 |       18 |     1718
+
+==============================================================================
+  RINCIAN ALASAN PEMBUANGAN PER KATEGORI
+==============================================================================
+
+[HOTEL]
+  (Tidak ada baris yang dibuang)
+
+[KULINER]
+  (Tidak ada baris yang dibuang)
+
+[WISATA]
+  •    4 baris → Entitas non-destinasi (indikasi agen tur)
+  •    4 baris → Missing value / harga tidak valid (NaN, kosong, atau ≤ 0)
+  •    5 baris → Duplikasi landmark 'coban rondo'
+  •    1 baris → Duplikasi landmark 'coban pelangi'
+  •    2 baris → Duplikasi landmark 'sumber maron'
+  •    1 baris → Duplikasi landmark 'museum angkut'
+  •    1 baris → Duplikasi nama persis 'Waduk Selorejo'
+
+  Rincian per Tahap (Wisata):
+    Tahap 1 - Filter agen tur      :    4 baris
+    Tahap 2 - Harga anomali         :    0 baris
+    Tahap 3 - Missing/harga invalid :    4 baris
+    Tahap 4 - Deduplikasi landmark  :   10 baris
+
+==============================================================================
+  STATISTIK HARGA WISATA — SEBELUM vs SESUDAH PREPROCESSING
+  (Menunjukkan dampak pembersihan terhadap distribusi harga klasterisasi)
+==============================================================================
+METRIK       |              SEBELUM |              SESUDAH
+----------------------------------------------------------
+N data       |                  629 |                  611
+Min          |                 Rp 0 |                 Rp 0
+Median       |            Rp 10,000 |            Rp 10,000
+Mean         |            Rp 19,269 |            Rp 18,647
+Max          |           Rp 275,000 |           Rp 275,000
+Std Dev      |            Rp 30,096 |            Rp 28,389
+
+==============================================================================
+  FILE OUTPUT YANG DIHASILKAN
+==============================================================================
+  📄 hotel_clean.xlsx                    — Data hotel bersih → input FCM
+  📄 hotel_dibuang.xlsx                  — Data hotel dibuang + Alasan_Dibuang
+  📄 tempat_makan_clean.xlsx             — Data kuliner bersih → input FCM
+  📄 tempat_makan_dibuang.xlsx           — Data kuliner dibuang + Alasan_Dibuang
+  📄 wisata_clean.xlsx                   — Data wisata bersih → input FCM
+  📄 wisata_dibuang.xlsx                 — Data wisata dibuang + Alasan_Dibuang
+  📄 laporan_preprocessing.txt           — Laporan ini
+
+==============================================================================
