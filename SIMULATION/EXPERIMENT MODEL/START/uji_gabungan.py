@@ -1,5 +1,3 @@
-
-
 import os
 import math
 import numpy as np
@@ -506,30 +504,7 @@ def menu_recommendation(datasets):
                 "labels": labels
             }
         
-        # Gunakan hasil c = 3 (Hemat, Balanced, Premium) untuk alur rekomendasi selanjutnya
-        res_c3 = xbi_comparison[key][3]
-        df["Cluster"] = res_c3["labels"]
-        centers_c3 = res_c3["centers"]
-        
-        # Sorting agar Cluster 0=Hemat, 1=Balanced, 2=Premium
-        sorted_indices = np.argsort(centers_c3.flatten())
-        
-        for i in range(3):
-            original_cluster_id = sorted_indices[i]
-            items_in_c = df[df["Cluster"] == original_cluster_id].copy()
-            
-            # Hitung target budget untuk kelas ini
-            target_price = cat_anchor * ratios[i]
-            
-            # Jika klaster kosong, ambil dari data terdekat di seluruh data
-            if items_in_c.empty:
-                df["distance_to_target"] = (df["Estimasi_Harga"] - target_price).abs()
-                best_items = df.nsmallest(15, "distance_to_target")
-            else:
-                items_in_c["distance_to_target"] = (items_in_c["Estimasi_Harga"] - target_price).abs()
-                best_items = items_in_c.nsmallest(15, "distance_to_target")
-                
-            candidates[key][i] = best_items.to_dict("records")
+        pass # Akhir dari loop pencarian Xie-Beni untuk perbandingan c=2 s/d 5
  
     # Tampilkan Evaluasi & Perbandingan Xie-Beni untuk c = 2 s/d 5 (Budget-Anchored)
     print("\n📈 PERBANDINGAN KUALITAS KLASTER c = 2 s/d 5 (BUDGET-ANCHORED FCM)")
@@ -558,18 +533,79 @@ def menu_recommendation(datasets):
     print(f"   di sekitar 1.0 dengan lebar spread Skema {scheme_choice} (Spread: ±{spread:.2f}).")
     print("=" * 75)
     
-    print("\n🔄 Memproses pencarian kombinasi rute terdekat dan penyaringan budget...")
-    
-    package_options = {0: [], 1: [], 2: []}
-    
-    # Aturan jumlah tayang opsi per kelas sesuai permintaan user
-    max_options_to_show = {
-        0: 5,   # Hemat: Tampilkan maks 5 opsi
-        1: 10,  # Balanced: Tampilkan maks 10 opsi
-        2: 3,   # Premium: Tampilkan maks 3 opsi
+    # 4. Input Pilihan Jumlah Klaster (c) dari User setelah melihat hasil Xie-Beni
+    try:
+        c_choice = int(input("\n👉 Berdasarkan tabel di atas, pilih c (jumlah klaster/kelas) yang ingin Anda gunakan untuk membuat paket rekomendasi (2-5, default 3): ") or 3)
+        if c_choice not in [2, 3, 4, 5]:
+            print("⚠️ Pilihan tidak valid. Menggunakan default c = 3.")
+            c_choice = 3
+    except ValueError:
+        print("⚠️ Input tidak valid. Menggunakan default c = 3.")
+        c_choice = 3
+
+    # Buat label dinamis berdasarkan c_choice
+    if c_choice == 2:
+        labels_list = ["Hemat", "Premium"]
+    elif c_choice == 3:
+        labels_list = ["Hemat", "Balanced", "Premium"]
+    elif c_choice == 4:
+        labels_list = ["Hemat/Sangat Murah", "Cukup Hemat", "Balanced/Sedang", "Premium/Mewah"]
+    else: # c_choice == 5
+        labels_list = ["Sangat Hemat", "Hemat", "Balanced", "Premium", "Sangat Premium"]
+        
+    # Wadah penyimpanan kandidat per kategori dan per klaster kelas (0 s/d c_choice-1)
+    candidates = {
+        "hotel": {i: [] for i in range(c_choice)},
+        "wisata": {i: [] for i in range(c_choice)},
+        "kuliner": {i: [] for i in range(c_choice)}
     }
     
-    for i in range(3):
+    for key in ["hotel", "wisata", "kuliner"]:
+        df = datasets[key].copy()
+        prices = df["Estimasi_Harga"].values
+        cat_anchor = hotel_anchor if key == "hotel" else (wisata_anchor if key == "wisata" else kuliner_anchor)
+        
+        # Ambil hasil clustering untuk c_choice yang dipilih
+        res_selected = xbi_comparison[key][c_choice]
+        df["Cluster"] = res_selected["labels"]
+        centers_selected = res_selected["centers"]
+        
+        # Sorting agar Cluster diurutkan dari harga termurah ke termahal
+        sorted_indices = np.argsort(centers_selected.flatten())
+        
+        # Hitung c_ratios untuk c_choice
+        c_ratios = np.linspace(1.0 - spread, 1.0 + spread, c_choice)
+        
+        for i in range(c_choice):
+            original_cluster_id = sorted_indices[i]
+            items_in_c = df[df["Cluster"] == original_cluster_id].copy()
+            
+            # Hitung target budget untuk kelas ini
+            target_price = cat_anchor * c_ratios[i]
+            
+            # Jika klaster kosong, ambil dari data terdekat di seluruh data
+            if items_in_c.empty:
+                df["distance_to_target"] = (df["Estimasi_Harga"] - target_price).abs()
+                best_items = df.nsmallest(15, "distance_to_target")
+            else:
+                items_in_c["distance_to_target"] = (items_in_c["Estimasi_Harga"] - target_price).abs()
+                best_items = items_in_c.nsmallest(15, "distance_to_target")
+                
+            candidates[key][i] = best_items.to_dict("records")
+            
+    print(f"\n🔄 Memproses pencarian kombinasi rute terdekat dan penyaringan budget untuk c = {c_choice}...")
+    
+    package_options = {i: [] for i in range(c_choice)}
+    
+    # Aturan jumlah tayang opsi per kelas
+    max_options_to_show = {}
+    for i in range(c_choice):
+        if c_choice == 3:
+            max_options_to_show = {0: 5, 1: 10, 2: 3}
+        else:
+            max_options_to_show[i] = 5
+            
+    for i in range(c_choice):
         # Ambil daftar kandidat untuk kelas i
         hotel_list = candidates["hotel"][i]
         wisata_list = candidates["wisata"][i]
@@ -626,30 +662,39 @@ def menu_recommendation(datasets):
                             "selisih": budget - total_pkg_cost
                         })
                         
-        # H. OPTIMASI SPASIAL & RATING (ADAPTIF): Urutkan kombinasi secara dinamis berdasarkan profil kelas budget pengguna
+        # H. OPTIMASI SPASIAL & RATING (ADAPTIF): Urutkan kombinasi secara dinamis
         def get_val(item, key, default=0.0):
             val = item.get(key, default)
             return default if (pd.isna(val) or val is None) else float(val)
 
-        if i == 0:
-            # Kelas Hemat: Urutkan berdasarkan jarak spasial terkecil (sangat sensitif terhadap ongkos transport)
-            valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
-        elif i == 1:
-            # Kelas Balanced: Urutkan secara hybrid (keseimbangan antara rating tertinggi dan jarak terdekat)
-            valid_combinations = sorted(
-                valid_combinations,
-                key=lambda x: (-get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
-            )
+        if c_choice == 3:
+            if i == 0:
+                valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
+            elif i == 1:
+                valid_combinations = sorted(
+                    valid_combinations,
+                    key=lambda x: (-get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
+                )
+            else:
+                valid_combinations = sorted(
+                    valid_combinations,
+                    key=lambda x: (-get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                )
         else:
-            # Kelas Premium (Sultan): Urutkan berdasarkan Rating tertinggi & Hotel termewah (mengabaikan kendala jarak)
-            # Agar destinasi ikonik kelas dunia yang agak jauh (seperti Bromo) tetap ditayangkan di Opsi 1
-            valid_combinations = sorted(
-                valid_combinations,
-                key=lambda x: (-get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
-            )
+            if i == 0:
+                valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
+            elif i == c_choice - 1:
+                valid_combinations = sorted(
+                    valid_combinations,
+                    key=lambda x: (-get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                )
+            else:
+                valid_combinations = sorted(
+                    valid_combinations,
+                    key=lambda x: (-get_val(x["wisata"], "Rating") * 5 + x["total_dist"] / 10.0)
+                )
         
-        # I. Jika tidak ada kombinasi yang di bawah budget (untuk budget sangat rendah),
-        # kita ambil 1 kombinasi termurah sebagai fallback darurat (Over Budget)
+        # I. Fallback jika kosong
         if not valid_combinations:
             min_cost_comb = None
             min_cost = float('inf')
@@ -690,7 +735,6 @@ def menu_recommendation(datasets):
             if min_cost_comb:
                 valid_combinations.append(min_cost_comb)
                 
-        # Simpan sejumlah maksimal opsi yang ingin ditampilkan
         package_options[i] = valid_combinations[:max_options_to_show[i]]
 
     # 5. Bangun Paket Wisata Multi-Opsi & Tampilkan Ke Terminal
@@ -698,8 +742,8 @@ def menu_recommendation(datasets):
     print(" 📦  HASIL REKOMENDASI PAKET WISATA MULTI-OPSI (SPASIAL OPTIMIZED)")
     print("="*60)
     
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(c_choice):
+        label = labels_list[i]
         options = package_options[i]
         
         print(f"\n=======================================================")
@@ -743,8 +787,8 @@ def menu_recommendation(datasets):
 
     # 6. Ekspor Hasil Rekomendasi ke Excel
     excel_rows = []
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(c_choice):
+        label = labels_list[i]
         options = package_options[i]
         for idx, opt in enumerate(options):
             h_item = opt["hotel"]
