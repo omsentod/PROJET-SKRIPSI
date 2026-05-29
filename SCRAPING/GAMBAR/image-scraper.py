@@ -277,7 +277,16 @@ def main_image_scraper():
     try:
         for index, row in df.iterrows():
             nama_tempat = row['Nama_Tempat']
-            link_maps = row['Link']
+            
+            # Cek apakah kolom 'Link' ada, jika tidak, kita gunakan URL pencarian otomatis
+            link_maps = None
+            if 'Link' in df.columns:
+                link_maps = row['Link']
+                
+            if pd.isna(link_maps) or not str(link_maps).startswith("http"):
+                # Fallback: Buat URL pencarian otomatis Google Maps berdasarkan nama tempat
+                query = f"{nama_tempat} Malang"
+                link_maps = f"https://www.google.com/maps/search/{urllib.parse.quote(query)}"
             
             # Bersihkan nama tempat untuk folder dan file
             nama_bersih = clean_filename(nama_tempat)
@@ -290,11 +299,6 @@ def main_image_scraper():
                 
             if len(existing_images) >= 5 and pd.notna(row['Gambar_Terunduh']) and row['Gambar_Terunduh'] >= 5:
                 print(f"\n[{index+1}/{len(df)}] Skip '{nama_tempat}' (Sudah memiliki {len(existing_images)} gambar).")
-                continue
-                
-            # Jika link kosong, skip
-            if pd.isna(link_maps) or not str(link_maps).startswith("http"):
-                print(f"\n[{index+1}/{len(df)}] Skip '{nama_tempat}' (Tautan tidak valid).")
                 continue
                 
             # Restart browser berkala setiap 10 tempat agar memori bersih
