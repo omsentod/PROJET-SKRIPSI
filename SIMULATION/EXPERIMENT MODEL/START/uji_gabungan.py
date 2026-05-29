@@ -828,6 +828,571 @@ def menu_recommendation(datasets):
             print(f"\n❌ Gagal mengekspor hasil ke Excel: {e}")
 
 # ==============================================================================
+# OPSI MENU 4: REKOMENDASI PAKET WISATA (DESTINATION-FIRST WORKFLOW - SKENARIO 3)
+# ==============================================================================
+def menu_destination_first(datasets):
+    df_wisata = datasets["wisata"]
+    print("\n" + "="*60)
+    print(" 🎯  DESTINATION-FIRST WORKFLOW (SKENARIO 3)")
+    print("="*60)
+    print("\nReferensi 10 Destinasi Wisata Terpopuler (Rating Tertinggi):")
+    print("-" * 75)
+    print(f"{'ID':<6} | {'Nama Destinasi':<35} | {'Harga Tiket':<15} | {'Rating':<6}")
+    print("-" * 75)
+    
+    if "Rating" in df_wisata.columns:
+        top_spots = df_wisata.sort_values(by="Rating", ascending=False).head(10)
+    else:
+        top_spots = df_wisata.head(10)
+        
+    for _, row in top_spots.iterrows():
+        rating_val = row["Rating"] if "Rating" in row and not pd.isna(row["Rating"]) else 0.0
+        print(f"{int(row['Id_Tempat']):<6} | {row['Nama_Tempat'][:35]:<35} | Rp {row['Estimasi_Harga']:<12,.0f} | {rating_val:<6.1f}")
+    print("-" * 75)
+    
+    while True:
+        try:
+            target_id = int(input("\n👉 Masukkan ID Tempat Wisata Pilihan Anda (bebas dari dataset Anda): ") or 0)
+            dest_row = df_wisata[df_wisata["Id_Tempat"] == target_id]
+            if not dest_row.empty:
+                selected_dest = dest_row.iloc[0].to_dict()
+                break
+            else:
+                print("❌ ID Tempat tidak ditemukan! Silakan periksa kembali dan masukkan ID yang valid.")
+        except ValueError:
+            print("❌ Input tidak valid! Harap masukkan angka ID Tempat.")
+            
+    print(f"\n📌 Destinasi Utama Terkunci: {selected_dest['Nama_Tempat']}")
+    print(f"   • Tiket Satuan : Rp {selected_dest['Estimasi_Harga']:,.0f}")
+    print(f"   • Koordinat    : ({selected_dest['Latitude']}, {selected_dest['Longitude']})")
+    
+    print("\nPilih Kondisi Operasional:")
+    print(" 1. Kondisi A (Dengan Input Budget & Validasi Finansial)")
+    print(" 2. Kondisi B (Tanpa Input Budget & Eksplorasi Spasial Klaster)")
+    
+    while True:
+        cond_choice = input("Pilih kondisi (1 atau 2): ").strip()
+        if cond_choice in ["1", "2"]:
+            break
+        print("❌ Pilihan tidak valid! Silakan masukkan 1 atau 2.")
+        
+    if cond_choice == "1":
+        print("\n" + "="*50)
+        print(" 🪙  KONDISI A: DENGAN INPUT BUDGET & VALIDASI FINANSIAL")
+        print("="*50)
+        
+        try:
+            budget = float(input("Masukkan Total Budget Anda (Rupiah, contoh 1500000): ") or 1500000)
+            persons = int(input("Masukkan Jumlah Peserta (orang, default 2): ") or 2)
+            duration = int(input("Masukkan Durasi Liburan (hari, default 2): ") or 2)
+            
+            print("\nSkema Rasio Centroid Inisialisasi:")
+            for code, ratio in RATIO_SCHEMES.items():
+                print(f"  [{code}] : Hemat={ratio[0]}x, Balanced={ratio[1]}x, Premium={ratio[2]}x")
+            scheme_choice = input("Pilih Skema Rasio Centroid (A-E, default B): ").strip().upper()
+            if scheme_choice not in RATIO_SCHEMES:
+                scheme_choice = "B"
+        except ValueError:
+            print("❌ Masukan tidak valid! Menggunakan nilai default.")
+            budget = 1500000
+            persons = 2
+            duration = 2
+            scheme_choice = "B"
+            
+        ratios = RATIO_SCHEMES[scheme_choice]
+        spread = 1.0 - ratios[0]
+        
+        cost_wisata_fixed = selected_dest["Estimasi_Harga"] * persons
+        remaining_budget = budget - cost_wisata_fixed
+        
+        print(f"\n🎫 Rincian Biaya Tiket Destinasi Utama:")
+        print(f"   • {selected_dest['Nama_Tempat']}: Rp {selected_dest['Estimasi_Harga']:,.0f} x {persons} orang = Rp {cost_wisata_fixed:,.0f}")
+        
+        if remaining_budget <= 0:
+            print(f"\n🚨 WARNING: Anggaran Anda (Rp {budget:,.0f}) tidak mencukupi untuk tiket destinasi utama!")
+            print(f"   (Kekurangan Anggaran: Rp {abs(remaining_budget):,.0f})")
+            print("💡 Silakan jalankan ulang dengan budget yang lebih tinggi.")
+            return
+            
+        print(f"   • Sisa Anggaran Pendukung (Akomodasi, Kuliner, Transportasi): Rp {remaining_budget:,.0f}")
+        
+        nights = duration - 1
+        num_rooms = math.ceil(persons / 2.0)
+        
+        if duration == 1:
+            allocations = {
+                "akomodasi": 0.0,
+                "kuliner": remaining_budget * 0.50,
+                "transportasi": remaining_budget * 0.50,
+            }
+        else:
+            allocations = {
+                "akomodasi": remaining_budget * 0.50,
+                "kuliner": remaining_budget * 0.25,
+                "transportasi": remaining_budget * 0.25,
+            }
+            
+        hotel_anchor = allocations["akomodasi"] / np.fmax(nights * num_rooms, 1.0)
+        kuliner_anchor = allocations["kuliner"] / (persons * 3 * duration)
+        
+        print(f"\n📊 Distribusi Sisa Anggaran Proporsional:")
+        if duration > 1:
+            print(f"   • Alokasi Akomodasi (50%): Rp {allocations['akomodasi']:,.0f} (Target Hotel/malam: Rp {hotel_anchor:,.0f})")
+        print(f"   • Alokasi Kuliner   (25%): Rp {allocations['kuliner']:,.0f} (Target Porsi Makan: Rp {kuliner_anchor:,.0f})")
+        print(f"   • Alokasi Transport (25%): Rp {allocations['transportasi']:,.0f}")
+        
+        xbi_comparison = {
+            "hotel": {},
+            "kuliner": {}
+        }
+        
+        for key in ["hotel", "kuliner"]:
+            df = datasets[key].copy()
+            prices = df["Estimasi_Harga"].values
+            cat_anchor = hotel_anchor if key == "hotel" else kuliner_anchor
+            
+            for c in [2, 3, 4, 5]:
+                c_ratios = np.linspace(1.0 - spread, 1.0 + spread, c)
+                init_centers = np.array([cat_anchor * r for r in c_ratios])
+                
+                centers, U, labels, _ = fuzzy_c_means_manual(
+                    prices, n_clusters=c, m=2.0, init_centroids=init_centers
+                )
+                
+                xb_val, sigma_val, sep_val = calculate_xie_beni(prices, centers, U, m=2.0)
+                xbi_comparison[key][c] = {
+                    "xb": xb_val,
+                    "sigma": sigma_val,
+                    "sep": sep_val,
+                    "centers": centers,
+                    "labels": labels
+                }
+                
+        print("\n📈 PERBANDINGAN KUALITAS KLASTER c = 2 s/d 5 (BUDGET-ANCHORED FCM)")
+        print("=" * 75)
+        for key in ["hotel", "kuliner"]:
+            disp_name = "Akomodasi (Hotel)" if key == "hotel" else "Kuliner (Makan)"
+            print(f"\n📊 Kategori: {disp_name.upper()}")
+            print("-" * 75)
+            print(f"{'c':<5} | {'Xie-Beni Index':<18} | {'Total Variansi (σ)':<20} | {'Separasi (sep)':<15}")
+            print("-" * 75)
+            
+            min_xb = float('inf')
+            best_c = 3
+            for c in [2, 3, 4, 5]:
+                metrics = xbi_comparison[key][c]
+                print(f"{c:<5} | {metrics['xb']:<18.6f} | {metrics['sigma']:<20,.2f} | {metrics['sep']:<15,.2f}")
+                if metrics['xb'] < min_xb:
+                    min_xb = metrics['xb']
+                    best_c = c
+            print("-" * 75)
+            print(f"🌟 Nilai c Optimal untuk {disp_name} adalah c = {best_c}")
+            print(f"   (Xie-Beni Index Terkecil: {min_xb:.6f})")
+            print("-" * 75)
+            
+        try:
+            c_choice = int(input("\n👉 Pilih c (jumlah klaster) yang ingin digunakan untuk membuat rekomendasi (2-5, default 3): ") or 3)
+            if c_choice not in [2, 3, 4, 5]:
+                c_choice = 3
+        except ValueError:
+            c_choice = 3
+            
+        if c_choice == 2:
+            labels_list = ["Hemat", "Premium"]
+        elif c_choice == 3:
+            labels_list = ["Hemat", "Balanced", "Premium"]
+        elif c_choice == 4:
+            labels_list = ["Hemat/Sangat Murah", "Cukup Hemat", "Balanced/Sedang", "Premium/Mewah"]
+        else:
+            labels_list = ["Sangat Hemat", "Hemat", "Balanced", "Premium", "Sangat Premium"]
+            
+        candidates = {
+            "hotel": {i: [] for i in range(c_choice)},
+            "kuliner": {i: [] for i in range(c_choice)}
+        }
+        
+        for key in ["hotel", "kuliner"]:
+            df = datasets[key].copy()
+            cat_anchor = hotel_anchor if key == "hotel" else kuliner_anchor
+            
+            res_selected = xbi_comparison[key][c_choice]
+            df["Cluster"] = res_selected["labels"]
+            centers_selected = res_selected["centers"]
+            
+            sorted_indices = np.argsort(centers_selected.flatten())
+            c_ratios = np.linspace(1.0 - spread, 1.0 + spread, c_choice)
+            
+            for i in range(c_choice):
+                original_cluster_id = sorted_indices[i]
+                items_in_c = df[df["Cluster"] == original_cluster_id].copy()
+                target_price = cat_anchor * c_ratios[i]
+                
+                if items_in_c.empty:
+                    df["distance_to_target"] = (df["Estimasi_Harga"] - target_price).abs()
+                    best_items = df.nsmallest(15, "distance_to_target")
+                else:
+                    items_in_c["distance_to_target"] = (items_in_c["Estimasi_Harga"] - target_price).abs()
+                    best_items = items_in_c.nsmallest(15, "distance_to_target")
+                    
+                candidates[key][i] = best_items.to_dict("records")
+                
+        print(f"\n🔄 Memproses pencarian kombinasi rute terdekat dan penyaringan budget untuk c = {c_choice}...")
+        package_options = {i: [] for i in range(c_choice)}
+        
+        max_options_to_show = {}
+        for i in range(c_choice):
+            if c_choice == 3:
+                max_options_to_show = {0: 5, 1: 10, 2: 3}
+            else:
+                max_options_to_show[i] = 5
+                
+        for i in range(c_choice):
+            hotel_list = candidates["hotel"][i]
+            kuliner_list = candidates["kuliner"][i]
+            
+            valid_combinations = []
+            
+            for h in hotel_list:
+                for k in kuliner_list:
+                    cost_hotel = h["Estimasi_Harga"] * nights * num_rooms if duration > 1 else 0
+                    cost_wisata = cost_wisata_fixed
+                    cost_kuliner = k["Estimasi_Harga"] * persons * 3 * duration
+                    
+                    if duration == 1:
+                        d1 = haversine_distance(k["Latitude"], k["Longitude"], selected_dest["Latitude"], selected_dest["Longitude"])
+                        total_dist = d1 * 2
+                    else:
+                        d1 = haversine_distance(h["Latitude"], h["Longitude"], selected_dest["Latitude"], selected_dest["Longitude"])
+                        d2 = haversine_distance(selected_dest["Latitude"], selected_dest["Longitude"], k["Latitude"], k["Longitude"])
+                        d3 = haversine_distance(k["Latitude"], k["Longitude"], h["Latitude"], h["Longitude"])
+                        total_dist = d1 + d2 + d3
+                        
+                    cost_transport, transport_desc = get_transport_info(persons, total_dist)
+                    total_pkg_cost = cost_hotel + cost_wisata + cost_kuliner + cost_transport
+                    
+                    if total_pkg_cost <= budget:
+                        valid_combinations.append({
+                            "hotel": h,
+                            "wisata": selected_dest,
+                            "kuliner": k,
+                            "cost_hotel": cost_hotel,
+                            "cost_wisata": cost_wisata,
+                            "cost_kuliner": cost_kuliner,
+                            "cost_transport": cost_transport,
+                            "transport_desc": transport_desc,
+                            "total_dist": total_dist,
+                            "total_cost": total_pkg_cost,
+                            "selisih": budget - total_pkg_cost
+                        })
+                        
+            def get_val(item, key, default=0.0):
+                val = item.get(key, default)
+                return default if (pd.isna(val) or val is None) else float(val)
+
+            if c_choice == 3:
+                if i == 0:
+                    valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
+                elif i == 1:
+                    valid_combinations = sorted(
+                        valid_combinations,
+                        key=lambda x: (-get_val(x["kuliner"], "Rating") * 5 + x["total_dist"] / 10.0)
+                    )
+                else:
+                    valid_combinations = sorted(
+                        valid_combinations,
+                        key=lambda x: (-get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                    )
+            else:
+                if i == 0:
+                    valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
+                elif i == c_choice - 1:
+                    valid_combinations = sorted(
+                        valid_combinations,
+                        key=lambda x: (-get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                    )
+                else:
+                    valid_combinations = sorted(
+                        valid_combinations,
+                        key=lambda x: (-get_val(x["kuliner"], "Rating") * 5 + x["total_dist"] / 10.0)
+                    )
+            
+            if not valid_combinations:
+                min_cost_comb = None
+                min_cost = float('inf')
+                for h in hotel_list[:5]:
+                    for k in kuliner_list[:5]:
+                        cost_hotel = h["Estimasi_Harga"] * nights * num_rooms if duration > 1 else 0
+                        cost_wisata = cost_wisata_fixed
+                        cost_kuliner = k["Estimasi_Harga"] * persons * 3 * duration
+                        if duration == 1:
+                            d1 = haversine_distance(k["Latitude"], k["Longitude"], selected_dest["Latitude"], selected_dest["Longitude"])
+                            total_dist = d1 * 2
+                        else:
+                            d1 = haversine_distance(h["Latitude"], h["Longitude"], selected_dest["Latitude"], selected_dest["Longitude"])
+                            d2 = haversine_distance(selected_dest["Latitude"], selected_dest["Longitude"], k["Latitude"], k["Longitude"])
+                            d3 = haversine_distance(k["Latitude"], k["Longitude"], h["Latitude"], h["Longitude"])
+                            total_dist = d1 + d2 + d3
+                        cost_transport, transport_desc = get_transport_info(persons, total_dist)
+                        total_pkg_cost = cost_hotel + cost_wisata + cost_kuliner + cost_transport
+                        if total_pkg_cost < min_cost:
+                            min_cost = total_pkg_cost
+                            min_cost_comb = {
+                                "hotel": h,
+                                "wisata": selected_dest,
+                                "kuliner": k,
+                                "cost_hotel": cost_hotel,
+                                "cost_wisata": cost_wisata,
+                                "cost_kuliner": cost_kuliner,
+                                "cost_transport": cost_transport,
+                                "transport_desc": transport_desc,
+                                "total_dist": total_dist,
+                                "total_cost": total_pkg_cost,
+                                "selisih": budget - total_pkg_cost
+                            }
+                if min_cost_comb:
+                    valid_combinations.append(min_cost_comb)
+                    
+            package_options[i] = valid_combinations[:max_options_to_show[i]]
+            
+    else:
+        print("\n" + "="*50)
+        print(" 🗺️  KONDISI B: TANPA INPUT BUDGET & EKSPLORASI SPASIAL KLASTER")
+        print("="*50)
+        
+        try:
+            persons = int(input("Masukkan Jumlah Peserta (orang, default 2): ") or 2)
+            duration = int(input("Masukkan Durasi Liburan (hari, default 2): ") or 2)
+        except ValueError:
+            print("❌ Masukan tidak valid! Menggunakan nilai default.")
+            persons = 2
+            duration = 2
+            
+        nights = duration - 1
+        num_rooms = math.ceil(persons / 2.0)
+        cost_wisata_fixed = selected_dest["Estimasi_Harga"] * persons
+        
+        xbi_comparison = {
+            "hotel": {},
+            "kuliner": {}
+        }
+        
+        for key in ["hotel", "kuliner"]:
+            df = datasets[key].copy()
+            prices = df["Estimasi_Harga"].values
+            
+            for c in [2, 3, 4, 5]:
+                centers, U, labels, _ = fuzzy_c_means_manual(
+                    prices, n_clusters=c, m=2.0, init_centroids=None
+                )
+                xb_val, sigma_val, sep_val = calculate_xie_beni(prices, centers, U, m=2.0)
+                xbi_comparison[key][c] = {
+                    "xb": xb_val,
+                    "sigma": sigma_val,
+                    "sep": sep_val,
+                    "centers": centers,
+                    "labels": labels
+                }
+                
+        print("\n📈 PERBANDINGAN KUALITAS KLASTER c = 2 s/d 5 (STANDARD FCM - OFFLINE)")
+        print("=" * 75)
+        for key in ["hotel", "kuliner"]:
+            disp_name = "Akomodasi (Hotel)" if key == "hotel" else "Kuliner (Makan)"
+            print(f"\n📊 Kategori: {disp_name.upper()}")
+            print("-" * 75)
+            print(f"{'c':<5} | {'Xie-Beni Index':<18} | {'Total Variansi (σ)':<20} | {'Separasi (sep)':<15}")
+            print("-" * 75)
+            
+            min_xb = float('inf')
+            best_c = 3
+            for c in [2, 3, 4, 5]:
+                metrics = xbi_comparison[key][c]
+                print(f"{c:<5} | {metrics['xb']:<18.6f} | {metrics['sigma']:<20,.2f} | {metrics['sep']:<15,.2f}")
+                if metrics['xb'] < min_xb:
+                    min_xb = metrics['xb']
+                    best_c = c
+            print("-" * 75)
+            print(f"🌟 Nilai c Optimal untuk {disp_name} adalah c = {best_c}")
+            print(f"   (Xie-Beni Index Terkecil: {min_xb:.6f})")
+            print("-" * 75)
+            
+        try:
+            c_choice = int(input("\n👉 Pilih c (jumlah klaster) yang ingin digunakan untuk membuat rekomendasi (2-5, default 3): ") or 3)
+            if c_choice not in [2, 3, 4, 5]:
+                c_choice = 3
+        except ValueError:
+            c_choice = 3
+            
+        if c_choice == 2:
+            labels_list = ["Hemat", "Premium"]
+        elif c_choice == 3:
+            labels_list = ["Hemat", "Balanced", "Premium"]
+        elif c_choice == 4:
+            labels_list = ["Hemat/Sangat Murah", "Cukup Hemat", "Balanced/Sedang", "Premium/Mewah"]
+        else:
+            labels_list = ["Sangat Hemat", "Hemat", "Balanced", "Premium", "Sangat Premium"]
+            
+        candidates = {
+            "hotel": {i: [] for i in range(c_choice)},
+            "kuliner": {i: [] for i in range(c_choice)}
+        }
+        
+        for key in ["hotel", "kuliner"]:
+            df = datasets[key].copy()
+            res_selected = xbi_comparison[key][c_choice]
+            df["Cluster"] = res_selected["labels"]
+            centers_selected = res_selected["centers"]
+            
+            sorted_indices = np.argsort(centers_selected.flatten())
+            
+            for i in range(c_choice):
+                original_cluster_id = sorted_indices[i]
+                items_in_c = df[df["Cluster"] == original_cluster_id].copy()
+                
+                items_in_c["spatial_dist"] = items_in_c.apply(
+                    lambda row: haversine_distance(row["Latitude"], row["Longitude"], selected_dest["Latitude"], selected_dest["Longitude"]),
+                    axis=1
+                )
+                
+                best_items = items_in_c.nsmallest(5, "spatial_dist")
+                candidates[key][i] = best_items.to_dict("records")
+                
+        print(f"\n🔄 Menyusun {c_choice} tingkatan pilihan paket terdekat secara spasial...")
+        package_options = {i: [] for i in range(c_choice)}
+        
+        for i in range(c_choice):
+            hotel_list = candidates["hotel"][i]
+            kuliner_list = candidates["kuliner"][i]
+            
+            valid_combinations = []
+            
+            for h in hotel_list:
+                for k in kuliner_list:
+                    cost_hotel = h["Estimasi_Harga"] * nights * num_rooms if duration > 1 else 0
+                    cost_wisata = cost_wisata_fixed
+                    cost_kuliner = k["Estimasi_Harga"] * persons * 3 * duration
+                    
+                    if duration == 1:
+                        d1 = haversine_distance(k["Latitude"], k["Longitude"], selected_dest["Latitude"], selected_dest["Longitude"])
+                        total_dist = d1 * 2
+                    else:
+                        d1 = haversine_distance(h["Latitude"], h["Longitude"], selected_dest["Latitude"], selected_dest["Longitude"])
+                        d2 = haversine_distance(selected_dest["Latitude"], selected_dest["Longitude"], k["Latitude"], k["Longitude"])
+                        d3 = haversine_distance(k["Latitude"], k["Longitude"], h["Latitude"], h["Longitude"])
+                        total_dist = d1 + d2 + d3
+                        
+                    cost_transport, transport_desc = get_transport_info(persons, total_dist)
+                    total_pkg_cost = cost_hotel + cost_wisata + cost_kuliner + cost_transport
+                    
+                    valid_combinations.append({
+                        "hotel": h,
+                        "wisata": selected_dest,
+                        "kuliner": k,
+                        "cost_hotel": cost_hotel,
+                        "cost_wisata": cost_wisata,
+                        "cost_kuliner": cost_kuliner,
+                        "cost_transport": cost_transport,
+                        "transport_desc": transport_desc,
+                        "total_dist": total_dist,
+                        "total_cost": total_pkg_cost,
+                        "selisih": 0.0
+                    })
+                    
+            valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
+            package_options[i] = valid_combinations[:3]
+
+    print("\n" + "="*60)
+    print(" 📦  HASIL REKOMENDASI PAKET WISATA MULTI-OPSI (DESTINATION-FIRST)")
+    print("="*60)
+    
+    for i in range(c_choice):
+        label = labels_list[i]
+        options = package_options[i]
+        
+        print(f"\n=======================================================")
+        print(f" 💼 KELAS PAKET: {label.upper()} (Menyajikan {len(options)} Opsi Terdekat)")
+        print(f"=======================================================")
+        
+        if not options:
+            print(" ⚠️  Tidak ada opsi rekomendasi yang tersedia untuk kelas ini.")
+            continue
+            
+        for idx, opt in enumerate(options):
+            h_item = opt["hotel"]
+            w_item = opt["wisata"]
+            k_item = opt["kuliner"]
+            
+            if cond_choice == "1":
+                status = "✅ UNDER BUDGET" if opt["total_cost"] <= budget else "⚠️ OVER BUDGET"
+            else:
+                status = "EKSPLORASI SPASIAL"
+                
+            if duration > 1:
+                hotel_detail = f"{h_item['Nama_Tempat']} (Rp {h_item['Estimasi_Harga']:,.0f}/malam)"
+            else:
+                hotel_detail = "Tanpa Hotel (One Day Trip)"
+                
+            print(f"\n 📦 OPSI {idx+1} ({status})")
+            print("-" * 55)
+            print(f"  🏨 Hotel     : {hotel_detail}")
+            if duration > 1:
+                print(f"                 Rincian: Rp {h_item['Estimasi_Harga']:,.0f} x {nights} malam x {num_rooms} kamar = Rp {opt['cost_hotel']:,.0f}")
+            print(f"  🎯 Wisata    : {w_item['Nama_Tempat']} (Tiket: Rp {w_item['Estimasi_Harga']:,.0f}/orang)")
+            print(f"                 Rincian: Rp {w_item['Estimasi_Harga']:,.0f} x {persons} orang = Rp {opt['cost_wisata']:,.0f}")
+            print(f"  🍜 Kuliner   : {k_item['Nama_Tempat']}")
+            print(f"                 Rincian: Rp {k_item['Estimasi_Harga']:,.0f} x {persons} orang x 3 makan x {duration} hari = Rp {opt['cost_kuliner']:,.0f}")
+            print(f"  🚗 Transport : Rp {opt['cost_transport']:,.0f}")
+            print(f"                 Rincian: Rute {opt['total_dist']:.2f} km menggunakan {opt['transport_desc']}")
+            print("-" * 55)
+            print(f"  💰 ESTIMASI TOTAL BIAYA PAKET : Rp {opt['total_cost']:,.0f}")
+            if cond_choice == "1":
+                if opt["selisih"] >= 0:
+                    print(f"  💵 Sisa Anggaran (Kembalian)  : Rp {opt['selisih']:,.0f}")
+                else:
+                    print(f"  💸 Kelebihan Anggaran (Nominal) : Rp {abs(opt['selisih']):,.0f}")
+            print("-" * 55)
+
+    excel_rows = []
+    for i in range(c_choice):
+        label = labels_list[i]
+        options = package_options[i]
+        for idx, opt in enumerate(options):
+            h_item = opt["hotel"]
+            w_item = opt["wisata"]
+            k_item = opt["kuliner"]
+            
+            excel_rows.append({
+                "Kelas Paket": label.upper(),
+                "No Opsi": idx + 1,
+                "Nama Hotel": h_item["Nama_Tempat"] if duration > 1 else "Tanpa Hotel (One Day Trip)",
+                "Harga Hotel (Satuan)": h_item["Estimasi_Harga"] if duration > 1 else 0,
+                "Total Biaya Hotel": opt["cost_hotel"],
+                "Nama Wisata": w_item["Nama_Tempat"],
+                "Harga Wisata (Satuan)": w_item["Estimasi_Harga"],
+                "Total Biaya Wisata": opt["cost_wisata"],
+                "Nama Kuliner": k_item["Nama_Tempat"],
+                "Harga Kuliner (Porsi)": k_item["Estimasi_Harga"],
+                "Total Biaya Kuliner": opt["cost_kuliner"],
+                "Rute Transport (Jarak km)": round(opt["total_dist"], 2),
+                "Armada Transport": opt["transport_desc"],
+                "Biaya Transport": opt["cost_transport"],
+                "Estimasi Total Biaya": opt["total_cost"],
+                "Total Budget Input": budget if cond_choice == "1" else "N/A (Tanpa Budget)",
+                "Sisa Anggaran": opt["selisih"] if (cond_choice == "1" and opt["selisih"] >= 0) else 0,
+                "Kelebihan Anggaran": abs(opt["selisih"]) if (cond_choice == "1" and opt["selisih"] < 0) else 0,
+                "Status": "UNDER BUDGET" if (cond_choice == "1" and opt["total_cost"] <= budget) else ("OVER BUDGET" if cond_choice == "1" else "SPATIAL EXPLORATION")
+            })
+            
+    if excel_rows:
+        try:
+            export_df = pd.DataFrame(excel_rows)
+            output_filename = "rekomendasi_paket_destination_first.xlsx"
+            export_df.to_excel(output_filename, index=False)
+            print(f"\n💾  BERHASIL: Hasil rekomendasi Destination-First telah diekspor!")
+            print(f"   📂 File tersimpan di: {os.path.abspath(output_filename)}")
+        except Exception as e:
+            print(f"\n❌ Gagal mengekspor hasil ke Excel: {e}")
+
+# ==============================================================================
 # MENU UTAMA INTERAKTIF TERMINAL
 # ==============================================================================
 def main():
@@ -836,7 +1401,6 @@ def main():
     print("      Fuzzy C-Means + Xie-Beni Index + Rekomendasi")
     print("="*60)
     
-    # Memuat dataset
     datasets = find_and_load_excel()
     
     while True:
@@ -845,10 +1409,11 @@ def main():
         print(" 1. Run Algoritma FCM Manual & Hitung Xie-Beni Index")
         print(" 2. Pengujian Nilai c Optimal (2 s/d 5) via Xie-Beni Index")
         print(" 3. Simulasi Workflow Rekomendasi Paket Wisata (Budget-First)")
-        print(" 4. Keluar dari Program")
+        print(" 4. Simulasi Workflow Rekomendasi Paket Wisata (Destination-First)")
+        print(" 5. Keluar dari Program")
         print("="*38)
         
-        choice = input("Pilih nomor menu (1-4): ").strip()
+        choice = input("Pilih nomor menu (1-5): ").strip()
         
         if choice == "1":
             menu_fcm_xie_beni(datasets)
@@ -857,10 +1422,12 @@ def main():
         elif choice == "3":
             menu_recommendation(datasets)
         elif choice == "4":
+            menu_destination_first(datasets)
+        elif choice == "5":
             print("\n👋 Keluar dari sistem pengujian. Terima kasih dan sukses skripsinya!")
             break
         else:
-            print("\n❌ Pilihan menu tidak valid. Silakan pilih kembali (1-4).")
+            print("\n❌ Pilihan menu tidak valid. Silakan pilih kembali (1-5).")
 
 if __name__ == "__main__":
     main()
