@@ -249,13 +249,20 @@ def main_image_scraper():
         
     try:
         df = pd.read_excel(file_to_load)
+        # Perbaikan data lama: jika 'Gambar_Terunduh' bernilai 0 tapi 'Folder_Gambar' kosong,
+        # itu adalah sisa inisialisasi awal program lama. Kita ubah ke None agar diproses kembali.
+        if 'Gambar_Terunduh' in df.columns:
+            folder_col = 'Folder_Gambar' if 'Folder_Gambar' in df.columns else None
+            if folder_col:
+                mask = (df['Gambar_Terunduh'] == 0) & (df[folder_col].isna() | (df[folder_col] == ''))
+                df.loc[mask, 'Gambar_Terunduh'] = None
     except Exception as e:
         print(f"✗ File '{file_to_load}' tidak dapat dimuat: {e}")
         return
         
     # Tambahkan kolom tracking gambar jika belum ada
     if 'Gambar_Terunduh' not in df.columns:
-        df['Gambar_Terunduh'] = 0
+        df['Gambar_Terunduh'] = None
     if 'Folder_Gambar' not in df.columns:
         df['Folder_Gambar'] = ''
 
@@ -292,13 +299,20 @@ def main_image_scraper():
             nama_bersih = clean_filename(nama_tempat)
             folder_tempat = os.path.join(kategori_dir, nama_bersih)
             
-            # Cek apakah folder sudah memiliki minimal 5 gambar
+            # 1. Cek apakah baris ini sudah pernah diproses sebelumnya (berdasarkan data di excel)
+            if pd.notna(row['Gambar_Terunduh']):
+                print(f"\n[{index+1}/{len(df)}] Skip '{nama_tempat}' (Sudah pernah diproses dengan hasil: {row['Gambar_Terunduh']} gambar terunduh).")
+                continue
+                
+            # 2. Cek apakah folder secara fisik sudah memiliki 5 gambar atau lebih
             existing_images = []
             if os.path.exists(folder_tempat):
                 existing_images = [f for f in os.listdir(folder_tempat) if f.lower().endswith('.jpg')]
                 
-            if len(existing_images) >= 5 and pd.notna(row['Gambar_Terunduh']) and row['Gambar_Terunduh'] >= 5:
-                print(f"\n[{index+1}/{len(df)}] Skip '{nama_tempat}' (Sudah memiliki {len(existing_images)} gambar).")
+            if len(existing_images) >= 5:
+                print(f"\n[{index+1}/{len(df)}] Skip '{nama_tempat}' (Folder sudah memiliki {len(existing_images)} gambar).")
+                df.at[index, 'Gambar_Terunduh'] = len(existing_images)
+                df.at[index, 'Folder_Gambar'] = os.path.relpath(folder_tempat, BASE_DIR)
                 continue
                 
             # Restart browser berkala setiap 10 tempat agar memori bersih
