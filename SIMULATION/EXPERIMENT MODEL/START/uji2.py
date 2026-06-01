@@ -266,9 +266,34 @@ def find_and_load_excel():
 # ==============================================================================
 # HELPER RUN FCM DENGAN STRUKTUR PUSAT AWAL DAN ANCHOR
 # ==============================================================================
-def run_budget_anchored_fcm(data_prices, budget, ratio_scheme="B", m=2.0):
-    ratios = RATIO_SCHEMES[ratio_scheme]
-    n_clusters = len(ratios)
+def get_cluster_label(idx, c):
+    """
+    Fungsi untuk menentukan label kategori paket secara akademis & dinamis berdasarkan jumlah klaster c.
+    """
+    if c == 2:
+        labels = ["HEMAT", "PREMIUM"]
+    elif c == 3:
+        labels = ["HEMAT", "BALANCED", "PREMIUM"]
+    elif c == 4:
+        labels = ["HEMAT", "BALANCED (LOW)", "BALANCED (HIGH)", "PREMIUM"]
+    elif c == 5:
+        labels = ["HEMAT", "BALANCED (LOW)", "BALANCED (MEDIUM)", "BALANCED (HIGH)", "PREMIUM"]
+    else:
+        labels = [f"KLASTER {i+1}" for i in range(c)]
+    return labels[idx] if idx < len(labels) else f"KLASTER {idx+1}"
+
+def run_budget_anchored_fcm(data_prices, budget, ratio_scheme="B", n_clusters=3, m=2.0):
+    if n_clusters == 3:
+        ratios = RATIO_SCHEMES[ratio_scheme]
+    elif n_clusters == 2:
+        ratios = [0.8, 1.2]
+    elif n_clusters == 4:
+        ratios = [0.5, 0.8, 1.2, 1.5]
+    elif n_clusters == 5:
+        ratios = [0.4, 0.7, 1.0, 1.3, 1.6]
+    else:
+        ratios = np.linspace(0.5, 1.5, n_clusters)
+        
     init_centers = np.array([budget * r for r in ratios]).reshape(-1, 1)
     
     centers, U, labels, iters = fuzzy_c_means_manual(
@@ -289,15 +314,13 @@ def run_budget_anchored_fcm(data_prices, budget, ratio_scheme="B", m=2.0):
         "xb": xb
     }
 
-def run_percentile_fcm(data_prices, m=2.0):
-    q1 = np.percentile(data_prices, 25)
-    median = np.percentile(data_prices, 50)
-    q3 = np.percentile(data_prices, 75)
-    
-    init_centers = np.array([q1, median, q3]).reshape(-1, 1)
+def run_percentile_fcm(data_prices, n_clusters=3, m=2.0):
+    q_vals = np.linspace(15, 85, n_clusters)
+    init_centers_flat = np.percentile(data_prices, q_vals)
+    init_centers = init_centers_flat.reshape(-1, 1)
     
     centers, U, labels, iters = fuzzy_c_means_manual(
-        data_prices, n_clusters=3, m=m, init_centroids=init_centers
+        data_prices, n_clusters=n_clusters, m=m, init_centroids=init_centers
     )
     
     xb, sigma, sep = calculate_xie_beni(data_prices, centers, U, m=m)
@@ -561,13 +584,57 @@ def menu_recommendation(datasets):
     wisata_anchor = allocations["wisata"] / persons
     kuliner_anchor = allocations["kuliner"] / (persons * 3 * duration)
     
-    ratios = RATIO_SCHEMES[scheme_choice]
-    spread = 1.0 - ratios[0]
+    # --------------------------------------------------------------------------
+    # SIMULASI & PERBANDINGAN XIE-BENI SECARA DINAMIS (c = 2 s/d 5)
+    # --------------------------------------------------------------------------
+    print("\n🔄 Menganalisis Jumlah Klaster Optimal (c = 2 s/d 5) secara Real-Time...")
+    print("-" * 85)
+    print(f"{'c':<4} | {'Wisata XBI':<14} | {'Hotel XBI':<14} | {'Kuliner XBI':<14} | {'Rata-rata XBI':<16}")
+    print("-" * 85)
+    
+    best_c_auto = 3
+    min_avg_xb = float('inf')
+    xbi_results = {}
+    
+    for c_val in [2, 3, 4, 5]:
+        xb_wisata = run_budget_anchored_fcm(datasets["wisata"]["Estimasi_Harga"].values, wisata_anchor, ratio_scheme=scheme_choice, n_clusters=c_val)["xb"]
+        xb_hotel = run_budget_anchored_fcm(datasets["hotel"]["Estimasi_Harga"].values, hotel_anchor, ratio_scheme=scheme_choice, n_clusters=c_val)["xb"]
+        xb_kuliner = run_budget_anchored_fcm(datasets["kuliner"]["Estimasi_Harga"].values, kuliner_anchor, ratio_scheme=scheme_choice, n_clusters=c_val)["xb"]
+        
+        avg_xb = (xb_wisata + xb_hotel + xb_kuliner) / 3.0
+        xbi_results[c_val] = (xb_wisata, xb_hotel, xb_kuliner, avg_xb)
+        
+        if avg_xb < min_avg_xb:
+            min_avg_xb = avg_xb
+            best_c_auto = c_val
+            
+    for c_val, vals in xbi_results.items():
+        w_xb, h_xb, k_xb, avg_xb = vals
+        star = " ★ (Terbaik)" if c_val == best_c_auto else ""
+        print(f"{c_val:<4} | {w_xb:<14.6f} | {h_xb:<14.6f} | {k_xb:<14.6f} | {avg_xb:<16.6f}{star}")
+        
+    print("-" * 85)
+    print(f"📌 Secara akademis (XBI Terkecil), jumlah klaster terbaik adalah c = {best_c_auto} (Rata-rata XBI: {min_avg_xb:.6f}).")
+    
+    while True:
+        try:
+            chosen_c = input(f"👉 Masukkan jumlah klaster (c) yang ingin Anda gunakan (2-5, default {best_c_auto}): ").strip()
+            if not chosen_c:
+                chosen_c = best_c_auto
+            chosen_c = int(chosen_c)
+            if chosen_c in [2, 3, 4, 5]:
+                break
+            else:
+                print("❌ Masukkan angka antara 2 s/d 5!")
+        except ValueError:
+            print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
+            
+    print(f"\n🔄 Menjalankan clustering dengan c = {chosen_c} klaster...")
     
     candidates = {
-        "hotel": {i: [] for i in range(3)},
-        "wisata": {i: [] for i in range(3)},
-        "kuliner": {i: [] for i in range(3)}
+        "hotel": {i: [] for i in range(chosen_c)},
+        "wisata": {i: [] for i in range(chosen_c)},
+        "kuliner": {i: [] for i in range(chosen_c)}
     }
     
     for key in ["hotel", "wisata", "kuliner"]:
@@ -575,10 +642,22 @@ def menu_recommendation(datasets):
         prices = df["Estimasi_Harga"].values
         cat_anchor = hotel_anchor if key == "hotel" else (wisata_anchor if key == "wisata" else kuliner_anchor)
         
-        res = run_budget_anchored_fcm(prices, cat_anchor, ratio_scheme=scheme_choice)
+        res = run_budget_anchored_fcm(prices, cat_anchor, ratio_scheme=scheme_choice, n_clusters=chosen_c)
         df["Cluster"] = res["labels"]
+        print(f"   • [Clustering {key.upper()}] Xie-Beni Index (XBI): {res['xb']:.6f} | Centroids: {['Rp {:,.0f}'.format(c) for c in res['cntr']]}")
         
-        for i in range(3):
+        if chosen_c == 3:
+            ratios = RATIO_SCHEMES[scheme_choice]
+        elif chosen_c == 2:
+            ratios = [0.8, 1.2]
+        elif chosen_c == 4:
+            ratios = [0.5, 0.8, 1.2, 1.5]
+        elif chosen_c == 5:
+            ratios = [0.4, 0.7, 1.0, 1.3, 1.6]
+        else:
+            ratios = np.linspace(0.5, 1.5, chosen_c)
+            
+        for i in range(chosen_c):
             items_in_c = df[df["Cluster"] == i].copy()
             target_price = cat_anchor * ratios[i]
             
@@ -591,10 +670,10 @@ def menu_recommendation(datasets):
                 
             candidates[key][i] = best_items.to_dict("records")
             
-    package_options = {i: [] for i in range(3)}
-    max_options_to_show = {0: 5, 1: 10, 2: 3}
+    package_options = {i: [] for i in range(chosen_c)}
+    max_options_to_show = {i: 15 for i in range(chosen_c)}
     
-    for i in range(3):
+    for i in range(chosen_c):
         hotel_list = candidates["hotel"][i]
         wisata_list = candidates["wisata"][i]
         kuliner_list = candidates["kuliner"][i]
@@ -641,15 +720,15 @@ def menu_recommendation(datasets):
 
         if i == 0:
             valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
-        elif i == 1:
+        elif i == chosen_c - 1:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
+                key=lambda x: (-get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
             )
         else:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                key=lambda x: (-get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
             )
         
         # Fallback jika kosong (diselaraskan dengan recommender.py & uji_gabungan.py)
@@ -697,8 +776,8 @@ def menu_recommendation(datasets):
     print(" 📦  HASIL REKOMENDASI PAKET WISATA MULTI-OPSI (SPASIAL OPTIMIZED)")
     print("="*60)
     
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(chosen_c):
+        label = get_cluster_label(i, chosen_c)
         options = package_options[i]
         
         print(f"\n=======================================================")
@@ -742,8 +821,8 @@ def menu_recommendation(datasets):
 
     # Ekspor ke Excel
     excel_rows = []
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(chosen_c):
+        label = get_cluster_label(i, chosen_c)
         options = package_options[i]
         for idx, opt in enumerate(options):
             h_item = opt["hotel"]
@@ -798,29 +877,75 @@ def menu_flexible_exploration(datasets):
         persons = 2
         duration = 2
         
-    print(f"\n⚡ Menjalankan FCM Persentil (Offline) pada seluruh kategori...")
+    # --------------------------------------------------------------------------
+    # SIMULASI & PERBANDINGAN XIE-BENI SECARA DINAMIS (c = 2 s/d 5)
+    # --------------------------------------------------------------------------
+    print("\n🔄 Menganalisis Jumlah Klaster Optimal (c = 2 s/d 5) secara Real-Time...")
+    print("-" * 85)
+    print(f"{'c':<4} | {'Wisata XBI':<14} | {'Hotel XBI':<14} | {'Kuliner XBI':<14} | {'Rata-rata XBI':<16}")
+    print("-" * 85)
+    
+    best_c_auto = 3
+    min_avg_xb = float('inf')
+    xbi_results = {}
+    
+    for c_val in [2, 3, 4, 5]:
+        xb_wisata = run_percentile_fcm(datasets["wisata"]["Estimasi_Harga"].values, n_clusters=c_val)["xb"]
+        xb_hotel = run_percentile_fcm(datasets["hotel"]["Estimasi_Harga"].values, n_clusters=c_val)["xb"]
+        xb_kuliner = run_percentile_fcm(datasets["kuliner"]["Estimasi_Harga"].values, n_clusters=c_val)["xb"]
+        
+        avg_xb = (xb_wisata + xb_hotel + xb_kuliner) / 3.0
+        xbi_results[c_val] = (xb_wisata, xb_hotel, xb_kuliner, avg_xb)
+        
+        if avg_xb < min_avg_xb:
+            min_avg_xb = avg_xb
+            best_c_auto = c_val
+            
+    for c_val, vals in xbi_results.items():
+        w_xb, h_xb, k_xb, avg_xb = vals
+        star = " ★ (Terbaik)" if c_val == best_c_auto else ""
+        print(f"{c_val:<4} | {w_xb:<14.6f} | {h_xb:<14.6f} | {k_xb:<14.6f} | {avg_xb:<16.6f}{star}")
+        
+    print("-" * 85)
+    print(f"📌 Secara akademis (XBI Terkecil), jumlah klaster terbaik adalah c = {best_c_auto} (Rata-rata XBI: {min_avg_xb:.6f}).")
+    
+    while True:
+        try:
+            chosen_c = input(f"👉 Masukkan jumlah klaster (c) yang ingin Anda gunakan (2-5, default {best_c_auto}): ").strip()
+            if not chosen_c:
+                chosen_c = best_c_auto
+            chosen_c = int(chosen_c)
+            if chosen_c in [2, 3, 4, 5]:
+                break
+            else:
+                print("❌ Masukkan angka antara 2 s/d 5!")
+        except ValueError:
+            print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
+            
+    print(f"\n🔄 Menjalankan clustering dengan c = {chosen_c} klaster...")
     
     clustered = {}
     for cat_name in ["hotel", "wisata", "kuliner"]:
         df = datasets[cat_name].copy()
         prices = df["Estimasi_Harga"].values
-        res = run_percentile_fcm(prices)
+        res = run_percentile_fcm(prices, n_clusters=chosen_c)
         df["Cluster"] = res["labels"]
+        print(f"   • [Clustering {cat_name.upper()}] Xie-Beni Index (XBI): {res['xb']:.6f} | Centroids: {['Rp {:,.0f}'.format(c) for c in res['cntr']]}")
         # Hitung membership degree untuk sorting terdekat
         u_matrix = res["u"]
         df["Membership_Degree"] = [float(u_matrix[res["labels"][j], j]) for j in range(len(prices))]
         clustered[cat_name] = {"df": df, "cntr": res["cntr"]}
         
     candidates = {
-        "hotel": {i: [] for i in range(3)},
-        "wisata": {i: [] for i in range(3)},
-        "kuliner": {i: [] for i in range(3)}
+        "hotel": {i: [] for i in range(chosen_c)},
+        "wisata": {i: [] for i in range(chosen_c)},
+        "kuliner": {i: [] for i in range(chosen_c)}
     }
     
     for key in ["hotel", "wisata", "kuliner"]:
         df = clustered[key]["df"]
         cntrs = clustered[key]["cntr"]
-        for i in range(3):
+        for i in range(chosen_c):
             items_in_c = df[df["Cluster"] == i].copy()
             if items_in_c.empty:
                 df["distance_to_target"] = (df["Estimasi_Harga"] - cntrs[i]).abs()
@@ -830,12 +955,12 @@ def menu_flexible_exploration(datasets):
                 
             candidates[key][i] = best_items.to_dict("records")
             
-    package_options = {i: [] for i in range(3)}
-    max_options_to_show = 5
+    package_options = {i: [] for i in range(chosen_c)}
+    max_options_to_show = {i: 15 for i in range(chosen_c)}
     num_rooms = math.ceil(persons / 2.0)
     nights = duration - 1
     
-    for i in range(3):
+    for i in range(chosen_c):
         hotel_list = candidates["hotel"][i]
         wisata_list = candidates["wisata"][i]
         kuliner_list = candidates["kuliner"][i]
@@ -880,25 +1005,25 @@ def menu_flexible_exploration(datasets):
 
         if i == 0:
             valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
-        elif i == 1:
-            valid_combinations = sorted(
-                valid_combinations,
-                key=lambda x: (-get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
-            )
-        else:
+        elif i == chosen_c - 1:
             valid_combinations = sorted(
                 valid_combinations,
                 key=lambda x: (-get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
             )
+        else:
+            valid_combinations = sorted(
+                valid_combinations,
+                key=lambda x: (-get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
+            )
             
-        package_options[i] = valid_combinations[:max_options_to_show]
+        package_options[i] = valid_combinations[:max_options_to_show[i]]
         
     print("\n" + "="*60)
     print(" 📦  HASIL REKOMENDASI FLEXIBLE EXPLORATION (KLASTER PERSENTIL)")
     print("="*60)
     
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(chosen_c):
+        label = get_cluster_label(i, chosen_c)
         options = package_options[i]
         
         print(f"\n=======================================================")
@@ -932,8 +1057,8 @@ def menu_flexible_exploration(datasets):
 
     # Ekspor ke Excel
     excel_rows = []
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(chosen_c):
+        label = get_cluster_label(i, chosen_c)
         options = package_options[i]
         for idx, opt in enumerate(options):
             h_item = opt["hotel"]
@@ -1036,12 +1161,58 @@ def menu_destination_first(datasets):
     
     if cond_choice == "2":
         # Kondisi B: Tanpa Budget (Percentile Offline)
-        print(f"\n⚡ Menjalankan FCM Persentil (Offline) pada hotel & kuliner...")
+        # --------------------------------------------------------------------------
+        # SIMULASI & PERBANDINGAN XIE-BENI SECARA DINAMIS (c = 2 s/d 5) - KONDISI B
+        # --------------------------------------------------------------------------
+        print("\n🔄 Menganalisis Jumlah Klaster Optimal (c = 2 s/d 5) secara Real-Time...")
+        print("-" * 70)
+        print(f"{'c':<4} | {'Hotel XBI':<14} | {'Kuliner XBI':<14} | {'Rata-rata XBI':<16}")
+        print("-" * 70)
+        
+        best_c_auto = 3
+        min_avg_xb = float('inf')
+        xbi_results = {}
+        
+        for c_val in [2, 3, 4, 5]:
+            xb_hotel = run_percentile_fcm(datasets["hotel"]["Estimasi_Harga"].values, n_clusters=c_val)["xb"]
+            xb_kuliner = run_percentile_fcm(datasets["kuliner"]["Estimasi_Harga"].values, n_clusters=c_val)["xb"]
+            
+            avg_xb = (xb_hotel + xb_kuliner) / 2.0
+            xbi_results[c_val] = (xb_hotel, xb_kuliner, avg_xb)
+            
+            if avg_xb < min_avg_xb:
+                min_avg_xb = avg_xb
+                best_c_auto = c_val
+                
+        for c_val, vals in xbi_results.items():
+            h_xb, k_xb, avg_xb = vals
+            star = " ★ (Terbaik)" if c_val == best_c_auto else ""
+            print(f"{c_val:<4} | {h_xb:<14.6f} | {k_xb:<14.6f} | {avg_xb:<16.6f}{star}")
+            
+        print("-" * 70)
+        print(f"📌 Secara akademis (XBI Terkecil), jumlah klaster terbaik adalah c = {best_c_auto} (Rata-rata XBI: {min_avg_xb:.6f}).")
+        
+        while True:
+            try:
+                chosen_c = input(f"👉 Masukkan jumlah klaster (c) yang ingin Anda gunakan (2-5, default {best_c_auto}): ").strip()
+                if not chosen_c:
+                    chosen_c = best_c_auto
+                chosen_c = int(chosen_c)
+                if chosen_c in [2, 3, 4, 5]:
+                    break
+                else:
+                    print("❌ Masukkan angka antara 2 s/d 5!")
+            except ValueError:
+                print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
+                
+        print(f"\n🔄 Menjalankan clustering dengan c = {chosen_c} klaster...")
+        
         for cat_name in ["hotel", "kuliner"]:
             df = datasets[cat_name].copy()
             prices = df["Estimasi_Harga"].values
-            res = run_percentile_fcm(prices)
+            res = run_percentile_fcm(prices, n_clusters=chosen_c)
             df["Cluster"] = res["labels"]
+            print(f"   • [Clustering {cat_name.upper()}] Xie-Beni Index (XBI): {res['xb']:.6f} | Centroids: {['Rp {:,.0f}'.format(c) for c in res['cntr']]}")
             # Hitung membership
             u_matrix = res["u"]
             df["Membership_Degree"] = [float(u_matrix[res["labels"][j], j]) for j in range(len(prices))]
@@ -1073,22 +1244,79 @@ def menu_destination_first(datasets):
         print(f"   • Sisa Anggaran Hotel per malam: Rp {anchor_hotel:,.0f}")
         print(f"   • Sisa Anggaran Kuliner per porsi: Rp {anchor_kul:,.0f}")
         
+        # --------------------------------------------------------------------------
+        # SIMULASI & PERBANDINGAN XIE-BENI SECARA DINAMIS (c = 2 s/d 5) - KONDISI A
+        # --------------------------------------------------------------------------
+        print("\n🔄 Menganalisis Jumlah Klaster Optimal (c = 2 s/d 5) secara Real-Time...")
+        print("-" * 70)
+        print(f"{'c':<4} | {'Hotel XBI':<14} | {'Kuliner XBI':<14} | {'Rata-rata XBI':<16}")
+        print("-" * 70)
+        
+        best_c_auto = 3
+        min_avg_xb = float('inf')
+        xbi_results = {}
+        
+        for c_val in [2, 3, 4, 5]:
+            xb_hotel = run_budget_anchored_fcm(datasets["hotel"]["Estimasi_Harga"].values, anchor_hotel, ratio_scheme="B", n_clusters=c_val)["xb"]
+            xb_kuliner = run_budget_anchored_fcm(datasets["kuliner"]["Estimasi_Harga"].values, anchor_kul, ratio_scheme="B", n_clusters=c_val)["xb"]
+            
+            avg_xb = (xb_hotel + xb_kuliner) / 2.0
+            xbi_results[c_val] = (xb_hotel, xb_kuliner, avg_xb)
+            
+            if avg_xb < min_avg_xb:
+                min_avg_xb = avg_xb
+                best_c_auto = c_val
+                
+        for c_val, vals in xbi_results.items():
+            h_xb, k_xb, avg_xb = vals
+            star = " ★ (Terbaik)" if c_val == best_c_auto else ""
+            print(f"{c_val:<4} | {h_xb:<14.6f} | {k_xb:<14.6f} | {avg_xb:<16.6f}{star}")
+            
+        print("-" * 70)
+        print(f"📌 Secara akademis (XBI Terkecil), jumlah klaster terbaik adalah c = {best_c_auto} (Rata-rata XBI: {min_avg_xb:.6f}).")
+        
+        while True:
+            try:
+                chosen_c = input(f"👉 Masukkan jumlah klaster (c) yang ingin Anda gunakan (2-5, default {best_c_auto}): ").strip()
+                if not chosen_c:
+                    chosen_c = best_c_auto
+                chosen_c = int(chosen_c)
+                if chosen_c in [2, 3, 4, 5]:
+                    break
+                else:
+                    print("❌ Masukkan angka antara 2 s/d 5!")
+            except ValueError:
+                print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
+                
+        print(f"\n🔄 Menjalankan clustering dengan c = {chosen_c} klaster...")
+        
         for cat_name, anchor in [("hotel", anchor_hotel), ("kuliner", anchor_kul)]:
             df = datasets[cat_name].copy()
             prices = df["Estimasi_Harga"].values
-            res = run_budget_anchored_fcm(prices, anchor, ratio_scheme="B")
+            res = run_budget_anchored_fcm(prices, anchor, ratio_scheme="B", n_clusters=chosen_c)
             df["Cluster"] = res["labels"]
+            print(f"   • [Clustering {cat_name.upper()}] Xie-Beni Index (XBI): {res['xb']:.6f} | Centroids: {['Rp {:,.0f}'.format(c) for c in res['cntr']]}")
             # Hitung membership
             u_matrix = res["u"]
             df["Membership_Degree"] = [float(u_matrix[res["labels"][j], j]) for j in range(len(prices))]
             clustered[cat_name] = {"df": df, "cntr": res["cntr"]}
             
     candidates = {
-        "hotel": {i: [] for i in range(3)},
-        "kuliner": {i: [] for i in range(3)}
+        "hotel": {i: [] for i in range(chosen_c)},
+        "kuliner": {i: [] for i in range(chosen_c)}
     }
     
-    ratios = RATIO_SCHEMES["B"]
+    if chosen_c == 3:
+        ratios = RATIO_SCHEMES["B"]
+    elif chosen_c == 2:
+        ratios = [0.8, 1.2]
+    elif chosen_c == 4:
+        ratios = [0.5, 0.8, 1.2, 1.5]
+    elif chosen_c == 5:
+        ratios = [0.4, 0.7, 1.0, 1.3, 1.6]
+    else:
+        ratios = np.linspace(0.5, 1.5, chosen_c)
+        
     for key in ["hotel", "kuliner"]:
         df = clustered[key]["df"]
         cntrs = clustered[key]["cntr"]
@@ -1098,7 +1326,7 @@ def menu_destination_first(datasets):
         else:
             anchor = None
             
-        for i in range(3):
+        for i in range(chosen_c):
             items_in_c = df[df["Cluster"] == i].copy()
             target_price = anchor * ratios[i] if anchor is not None else cntrs[i]
             
@@ -1111,10 +1339,10 @@ def menu_destination_first(datasets):
                 
             candidates[key][i] = best_items.to_dict("records")
             
-    package_options = {i: [] for i in range(3)}
-    max_options_to_show = {0: 5, 1: 10, 2: 3} if cond_choice == "1" else {0: 5, 1: 5, 2: 5}
+    package_options = {i: [] for i in range(chosen_c)}
+    max_options_to_show = {i: 15 for i in range(chosen_c)}
     
-    for i in range(3):
+    for i in range(chosen_c):
         hotel_list = candidates["hotel"][i]
         kuliner_list = candidates["kuliner"][i]
         
@@ -1158,15 +1386,15 @@ def menu_destination_first(datasets):
 
         if i == 0:
             valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
-        elif i == 1:
+        elif i == chosen_c - 1:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["kuliner"], "Rating") * 5 + x["total_dist"] / 10.0)
+                key=lambda x: (-get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
             )
         else:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                key=lambda x: (-get_val(x["kuliner"], "Rating") * 5 + x["total_dist"] / 10.0)
             )
             
         # Fallback jika kosong (hanya berlaku jika pakai budget / Kondisi A)
@@ -1212,8 +1440,8 @@ def menu_destination_first(datasets):
     print(" 📦  HASIL REKOMENDASI DESTINATION-FIRST (SINKRON DENGAN RECOMMENDER.PY)")
     print("="*60)
     
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(chosen_c):
+        label = get_cluster_label(i, chosen_c)
         options = package_options[i]
         
         print(f"\n=======================================================")
@@ -1257,8 +1485,8 @@ def menu_destination_first(datasets):
 
     # Ekspor ke Excel
     excel_rows = []
-    for i in range(3):
-        label = CLUSTER_LABELS[i]
+    for i in range(chosen_c):
+        label = get_cluster_label(i, chosen_c)
         options = package_options[i]
         for idx, opt in enumerate(options):
             h_item = opt["hotel"]
