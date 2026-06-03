@@ -1,7 +1,0 @@
-pandas
-openpyxl
-numpy
-scikit-fuzzy
-matplotlib
-python-dotenv
-requests

@@ -12,7 +12,7 @@ from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 
 # ================= KONFIGURASI =================
-FILE_INPUT = 'hotelv2.xlsx' 
+FILE_INPUT = 'hasil-htm/hotelV2-htm.xlsx'  # File sudah ada harga, perlu tambah Link_Sumber
 KATEGORI = 'hotel' # 'wisata' atau 'hotel'
 # ===============================================
 
@@ -156,8 +156,10 @@ def main_price_scraper():
     
     try:
         for index, row in df.iterrows():
-            # Lewati jika sudah memiliki data harga valid yang terkumpul sebelumnya
-            if pd.notna(row['Estimasi_Harga']) and row['Estimasi_Harga'] > 0:
+            # Lewati hanya jika sudah memiliki harga DAN link sumber (keduanya harus ada)
+            sudah_ada_harga = pd.notna(row['Estimasi_Harga']) and row['Estimasi_Harga'] > 0
+            sudah_ada_link  = pd.notna(row.get('Link_Sumber', None)) and str(row.get('Link_Sumber', '')).strip() != ''
+            if sudah_ada_harga and sudah_ada_link:
                 continue
                 
             # Restart browser berkala setiap 15 hotel yang dicari agar memori Chrome bersih & terhindar dari block
