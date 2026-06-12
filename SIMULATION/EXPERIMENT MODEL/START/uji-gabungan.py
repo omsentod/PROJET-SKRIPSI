@@ -6,19 +6,63 @@ import pandas as pd
 # ==============================================================================
 # 1. KONFIGURASI & STRUKTUR TARIF (SELESAI DENGAN RECOMMENDER.PY)
 # ==============================================================================
-RATIO_SCHEMES = {
-    "A": (0.5, 1.0, 1.5),   # Sangat Lebar (100%)
-    "B": (0.6, 1.0, 1.4),   # Moderat (80%) — Pilihan utama skripsi
-    "C": (0.7, 1.0, 1.3),   # Sempit (60%)
-    "D": (0.5, 1.0, 2.0),   # Ekstrem (150%)
-    "E": (0.8, 1.0, 1.2),   # Sangat Sempit (40%)
+RATIO_SCHEMES_ALL = {
+    2: {
+        "A": (0.8, 1.2),                        # Narrow    ±20%
+        "B": (0.7, 1.3),                        # Moderate  ±30%
+        "C": (0.6, 1.4),                        # Wide      ±40%  [Utama]
+        "D": (0.5, 1.5),                        # Very Wide ±50%
+    },
+    3: {
+        "A": (0.8, 1.0, 1.2),                  # Narrow    ±20%
+        "B": (0.7, 1.0, 1.3),                  # Moderate  ±30%
+        "C": (0.6, 1.0, 1.4),                  # Wide      ±40%  [Utama]
+        "D": (0.5, 1.0, 1.5),                  # Very Wide ±50%
+        "E": (0.5, 1.0, 2.0),                  # Ekstrem
+    },
+    4: {
+        "A": (0.8, 0.93, 1.07, 1.2),           # Narrow    ±20%
+        "B": (0.7, 0.9, 1.1, 1.3),             # Moderate  ±30%
+        "C": (0.5, 0.8, 1.2, 1.5),             # Wide      ±50%  [Utama]
+        "D": (0.4, 0.8, 1.2, 1.6),             # Very Wide ±60%
+    },
+    5: {
+        "A": (0.8, 0.9, 1.0, 1.1, 1.2),        # Narrow    ±20%
+        "B": (0.7, 0.85, 1.0, 1.15, 1.3),      # Moderate  ±30%
+        "C": (0.6, 0.8, 1.0, 1.2, 1.4),        # Wide      ±40%
+        "D": (0.4, 0.7, 1.0, 1.3, 1.6),        # Very Wide ±60%  [Utama]
+    },
 }
 
-CLUSTER_LABELS = {
-    0: "Hemat",
-    1: "Balanced",
-    2: "Premium",
+RATIO_SCHEME_LABELS = {
+    2: {
+        "A": "Narrow     (0.8× ; 1.2×)                                    ±20%",
+        "B": "Moderate   (0.7× ; 1.3×)                                    ±30%",
+        "C": "Wide       (0.6× ; 1.4×)                                    ±40%  [Utama]",
+        "D": "Very Wide  (0.5× ; 1.5×)                                    ±50%",
+    },
+    3: {
+        "A": "Narrow     (0.8× ; 1.0× ; 1.2×)                            ±20%",
+        "B": "Moderate   (0.7× ; 1.0× ; 1.3×)                            ±30%",
+        "C": "Wide       (0.6× ; 1.0× ; 1.4×)                            ±40%  [Utama]",
+        "D": "Very Wide  (0.5× ; 1.0× ; 1.5×)                            ±50%",
+        "E": "Ekstrem    (0.5× ; 1.0× ; 2.0×)",
+    },
+    4: {
+        "A": "Narrow     (0.8× ; 0.93× ; 1.07× ; 1.2×)                   ±20%",
+        "B": "Moderate   (0.7× ; 0.9×  ; 1.1×  ; 1.3×)                   ±30%",
+        "C": "Wide       (0.5× ; 0.8×  ; 1.2×  ; 1.5×)                   ±50%  [Utama]",
+        "D": "Very Wide  (0.4× ; 0.8×  ; 1.2×  ; 1.6×)                   ±60%",
+    },
+    5: {
+        "A": "Narrow     (0.8× ; 0.9× ; 1.0× ; 1.1× ; 1.2×)             ±20%",
+        "B": "Moderate   (0.7× ; 0.85× ; 1.0× ; 1.15× ; 1.3×)           ±30%",
+        "C": "Wide       (0.6× ; 0.8×  ; 1.0× ; 1.2×  ; 1.4×)           ±40%",
+        "D": "Very Wide  (0.4× ; 0.7×  ; 1.0× ; 1.3×  ; 1.6×)           ±60%  [Utama]",
+    },
 }
+
+RATIO_SCHEMES = RATIO_SCHEMES_ALL[3]  # alias backward-compat (c=3)
 
 TRANSPORT_RATES = {
     "GoRide": {
@@ -154,13 +198,13 @@ def calculate_xie_beni(data, centers, U, m=2.0):
     return xb, sigma, sep
 
 # ==============================================================================
-# 4. FORMULA HAVERSINE DENGAN FAKTOR JALAN DARAT (ROAD FACTOR 1.3x) & TRANSPORTASI
+# 4. FORMULA HAVERSINE DENGAN FAKTOR JALAN DARAT (ROAD FACTOR 1.45x) & TRANSPORTASI
 # ==============================================================================
 def haversine_distance(lat1, lon1, lat2, lon2):
     """
     Formula Haversine untuk menghitung jarak garis lurus di permukaan bumi.
-    Jarak dikalikan faktor 1.3 sebagai konversi rute jalan darat riil (Road Factor).
-    Menyelaraskan estimasi jarak offline dengan Uji_Gabungan dan Recommender.py secara akademis.
+    Jarak dikalikan faktor 1.45 sebagai konversi rute jalan darat riil (Road Factor).
+    Selaras dengan transport_api.py dan recommender.py pada sistem aktual.
     """
     R = 6371.0  # Radius bumi (km)
     
@@ -173,7 +217,7 @@ def haversine_distance(lat1, lon1, lat2, lon2):
          math.cos(lat1_r) * math.cos(lat2_r) * math.sin(dlon / 2) ** 2)
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
     
-    return R * c * 1.3
+    return R * c * 1.45
 
 def find_k_malam(k_siang, kuliner_list, anchor_lat, anchor_lon):
     """
@@ -243,7 +287,24 @@ def format_rupiah(val):
         return "Rp 0"
     return "Rp " + f"{int(round(val)):,}".replace(",", ".")
 
-def build_itinerary(h_item, w_item, k_item, k_malam_item, duration, candidates_wisata, candidates_kuliner, is_destination_first=False):
+def classify_region(lat, lon):
+    """
+    Mengelompokkan koordinat ke 3 wilayah utama Malang Raya.
+    Selaras dengan recommender.py pada sistem aktual.
+    """
+    try:
+        lat_f = float(lat)
+        lon_f = float(lon)
+    except (TypeError, ValueError):
+        return "Kabupaten Malang"
+    if -7.91 <= lat_f <= -7.73 and 112.43 <= lon_f <= 112.58:
+        return "Kota Batu"
+    elif -8.05 <= lat_f <= -7.90 and 112.56 <= lon_f <= 112.69:
+        return "Kota Malang"
+    else:
+        return "Kabupaten Malang"
+
+def build_itinerary(h_item, w_item, k_item, k_malam_item, duration, candidates_wisata, candidates_kuliner):
     """
     Membangun rencana perjalanan harian (itinerary) dinamis yang bervariasi
     setiap harinya, menyelaraskan dengan logika 3 kali makan & rute baru.
@@ -285,13 +346,31 @@ def build_itinerary(h_item, w_item, k_item, k_malam_item, duration, candidates_w
     else:
         hotel_seq = [h_item] * nights
         for d in range(1, duration + 1):
-            if is_destination_first and d == 1:
+            if d == 1:
                 w_var = w_item
+                k_var = k_item
             else:
-                w_var = candidates_wisata[d % len(candidates_wisata)]
-                
-            k_var = candidates_kuliner[d % len(candidates_kuliner)]
-            
+                # Variasi wisata: sort berdasarkan kedekatan ke hotel hari itu
+                w_alts = [x for x in candidates_wisata if x.get("Nama_Tempat") != w_item.get("Nama_Tempat")]
+                if not w_alts:
+                    w_alts = candidates_wisata
+                h_ref = hotel_seq[d - 2] if (d - 2) < len(hotel_seq) else h_item
+                w_alts = sorted(w_alts, key=lambda x: haversine_distance(
+                    h_ref.get("Latitude", 0), h_ref.get("Longitude", 0),
+                    x.get("Latitude", 0), x.get("Longitude", 0)
+                ))
+                w_var = w_alts[(d - 2) % len(w_alts)]
+
+                # Variasi kuliner: sort berdasarkan kedekatan ke wisata hari itu
+                k_alts = [x for x in candidates_kuliner if x.get("Nama_Tempat") != k_item.get("Nama_Tempat")]
+                if not k_alts:
+                    k_alts = candidates_kuliner
+                k_alts = sorted(k_alts, key=lambda x: haversine_distance(
+                    w_var.get("Latitude", 0), w_var.get("Longitude", 0),
+                    x.get("Latitude", 0), x.get("Longitude", 0)
+                ))
+                k_var = k_alts[(d - 2) % len(k_alts)]
+
             # Makan Malam hanya ada jika bukan hari checkout
             if d < duration:
                 day_anchor_lat = hotel_seq[d-1].get("Latitude", 0)
@@ -341,14 +420,14 @@ def build_itinerary(h_item, w_item, k_item, k_malam_item, duration, candidates_w
             
     return itinerary
 
-def calculate_pkg_metrics(h, w, k, kuliner_list, duration, persons, num_rooms, nights, candidates_wisata, is_destination_first=False):
+def calculate_pkg_metrics(h, w, k, kuliner_list, duration, persons, num_rooms, nights, candidates_wisata):
     # Find k_malam
     anchor_lat = h.get("Latitude", 0) if duration > 1 else w.get("Latitude", 0)
     anchor_lon = h.get("Longitude", 0) if duration > 1 else w.get("Longitude", 0)
     k_malam = find_k_malam(k, kuliner_list, anchor_lat, anchor_lon)
-    
+
     # Build itinerary
-    itinerary = build_itinerary(h, w, k, k_malam, duration, candidates_wisata, kuliner_list, is_destination_first)
+    itinerary = build_itinerary(h, w, k, k_malam, duration, candidates_wisata, kuliner_list)
     
     # Calculate costs and distances
     cost_hotel = 0
@@ -874,22 +953,122 @@ def get_cluster_label(idx, c):
     elif c == 4:
         labels = ["HEMAT", "BALANCED", "PREMIUM", "LUXURY"]
     elif c == 5:
-        labels = ["SANGAT HEMAT", "HEMAT", "BALANCED", "PREMIUM", "LUXURY"]
+        labels = ["Hemat", "Balanced", "Premium", "Luxury", "Elite"]
     else:
         labels = [f"KLASTER {i+1}" for i in range(c)]
     return labels[idx] if idx < len(labels) else f"KLASTER {idx+1}"
 
-def run_budget_anchored_fcm(data_prices, budget, ratio_scheme="B", n_clusters=3, m=2.0):
-    if n_clusters == 3:
-        ratios = RATIO_SCHEMES[ratio_scheme]
-    elif n_clusters == 2:
-        ratios = [0.8, 1.2]
-    elif n_clusters == 4:
-        ratios = [0.5, 0.8, 1.2, 1.5]
-    elif n_clusters == 5:
-        ratios = [0.4, 0.7, 1.0, 1.3, 1.6]
+def get_default_scheme(c):
+    return {2: "C", 3: "C", 4: "C", 5: "D"}.get(c, "C")
+
+def display_ratio_schemes(c):
+    labels = RATIO_SCHEME_LABELS.get(c, {})
+    default = get_default_scheme(c)
+    print(f"\nSkema Rasio Centroid Inisialisasi (c={c}):")
+    print("-" * 72)
+    for code, label in labels.items():
+        default_mark = "  <-- default" if code == default else ""
+        print(f"  [{code}] {label}{default_mark}")
+    print("-" * 72)
+
+def ask_ratio_scheme(c):
+    display_ratio_schemes(c)
+    schemes = RATIO_SCHEMES_ALL.get(c, {})
+    valid_codes = list(schemes.keys())
+    default = get_default_scheme(c)
+    codes_str = "/".join(valid_codes)
+    choice = input(f"Pilih Skema Rasio ({codes_str}, default {default}): ").strip().upper()
+    if choice not in schemes:
+        choice = default
+    return choice
+
+def show_scheme_xbi_comparison(c, prices_dict, anchors_dict):
+    """
+    Tampilkan perbandingan skema rasio: multiplier, target harga seleksi, dan XBI.
+    XBI bisa identik antar skema (FCM konvergen sama) — yang berbeda adalah
+    target harga yang dipakai untuk memilih item kandidat di tiap klaster.
+    """
+    schemes = RATIO_SCHEMES_ALL.get(c, {})
+    labels  = RATIO_SCHEME_LABELS.get(c, {})
+    if not schemes:
+        return
+
+    cats          = list(prices_dict.keys())
+    cluster_names = [get_cluster_label(i, c) for i in range(c)]
+    col_w         = 13
+
+    # ── Hitung XBI per skema ──────────────────────────────────────────────────
+    results   = {}
+    best_code = None
+    best_avg  = float('inf')
+    for code in schemes:
+        xb_list = [
+            run_budget_anchored_fcm(prices_dict[cat], anchors_dict[cat],
+                                    ratio_scheme=code, n_clusters=c)["xb"]
+            for cat in cats
+        ]
+        avg = sum(xb_list) / len(xb_list)
+        results[code] = (xb_list, avg)
+        if avg < best_avg:
+            best_avg, best_code = avg, code
+
+    # Anggap "sama" jika range < 1% dari rata-rata (perbedaan tidak bermakna)
+    avg_xbs   = [v[1] for v in results.values()]
+    xbi_range = max(avg_xbs) - min(avg_xbs)
+    xbi_mean  = sum(avg_xbs) / len(avg_xbs) if avg_xbs else 1
+    all_xbi_equal = (xbi_range / xbi_mean) < 0.01
+
+    # ── Header tabel ──────────────────────────────────────────────────────────
+    xbi_cols = " | ".join([f"{(cat.upper() + ' XBI'):<{col_w}}" for cat in cats])
+    avg_col  = f" | {'Avg XBI':<{col_w}}" if len(cats) > 1 else ""
+    ratio_w  = max(40, c * 10)
+    sep_len  = 10 + ratio_w + 3 + len(xbi_cols) + len(avg_col) + 4
+    sep      = "-" * sep_len
+
+    print(f"\n📊 Perbandingan Skema Rasio — c={c}  (XBI: semakin kecil = klaster lebih baik):")
+    print(sep)
+    print(f"  {'Skema':<6} | {'Rasio (' + ' | '.join(cluster_names) + ')':<{ratio_w}} | {xbi_cols}{avg_col}")
+    print(sep)
+
+    for code, (xb_list, avg) in results.items():
+        star     = " ★ (Terbaik)" if (code == best_code and not all_xbi_equal) else ""
+        ratio_str = "  ".join([f"{r}×" for r in schemes[code]])
+        xbi_str  = " | ".join([f"{v:<{col_w}.6f}" for v in xb_list])
+        avg_str  = f" | {avg:<{col_w}.6f}" if len(cats) > 1 else ""
+        print(f"  [{code}]    | {ratio_str:<{ratio_w}} | {xbi_str}{avg_str}{star}")
+
+    print(sep)
+
+    if all_xbi_equal:
+        # XBI identik → jelaskan perbedaan lewat target harga seleksi
+        print(f"  ⚠️  XBI identik di semua skema — FCM konvergen ke klaster yang sama.")
+        print(f"     Yang BERBEDA adalah TARGET HARGA SELEKSI item kandidat per klaster:\n")
+        # Tampilkan target harga per skema untuk setiap kategori
+        for cat in cats:
+            anchor = anchors_dict[cat]
+            print(f"     ── {cat.upper()} (anchor = Rp {anchor:,.0f}) ──")
+            for code in schemes:
+                ratios   = schemes[code]
+                targets  = "  |  ".join(
+                    [f"{get_cluster_label(i, c)}=Rp{anchor * ratios[i]:,.0f}"
+                     for i in range(c)]
+                )
+                marker = " ← default" if code == get_default_scheme(c) else ""
+                print(f"     [{code}]  {targets}{marker}")
+            print()
     else:
-        ratios = np.linspace(0.5, 1.5, n_clusters)
+        print(f"  💡 Skema terbaik (XBI terkecil): [{best_code}] {labels.get(best_code, '').strip()}")
+        print()
+
+def run_budget_anchored_fcm(data_prices, budget, ratio_scheme=None, n_clusters=3, m=2.0):
+    schemes_for_c = RATIO_SCHEMES_ALL.get(n_clusters)
+    if schemes_for_c is None:
+        ratios = np.linspace(0.5, 1.5, n_clusters).tolist()
+    else:
+        default = get_default_scheme(n_clusters)
+        if ratio_scheme is None or ratio_scheme not in schemes_for_c:
+            ratio_scheme = default
+        ratios = schemes_for_c[ratio_scheme]
         
     init_centers = np.array([budget * r for r in ratios]).reshape(-1, 1)
     
@@ -912,7 +1091,7 @@ def run_budget_anchored_fcm(data_prices, budget, ratio_scheme="B", n_clusters=3,
     }
 
 def run_percentile_fcm(data_prices, n_clusters=3, m=2.0):
-    q_vals = np.linspace(15, 85, n_clusters)
+    q_vals = np.linspace(100 / (n_clusters + 1), 100 * n_clusters / (n_clusters + 1), n_clusters)
     init_centers_flat = np.percentile(data_prices, q_vals)
     init_centers = init_centers_flat.reshape(-1, 1)
     
@@ -1021,33 +1200,27 @@ def menu_optimal_c_search(datasets):
     c_range = [2, 3, 4, 5]
     best_c = 3
     min_xb = float('inf')
-    
-    # Rincian inisialisasi dinamis untuk Budget-Anchored FCM c = 2 s/d 5
-    anchored_ratios = {
-        2: [0.8, 1.2],
-        3: None,  # Diambil dari RATIO_SCHEMES
-        4: [0.5, 0.8, 1.2, 1.5],
-        5: [0.4, 0.7, 1.0, 1.3, 1.6]
-    }
-    
+
     if fcm_type == "2":
         try:
             budget = float(input("\nMasukkan Total Budget (Rupiah, contoh 1500000): ") or 1500000)
             persons = int(input("Masukkan Jumlah Peserta (orang, default 2): ") or 2)
             duration = int(input("Masukkan Durasi Liburan (hari, default 2): ") or 2)
             
-            print("\nSkema Rasio Centroid Inisialisasi (khusus untuk c=3):")
-            for code, ratio in RATIO_SCHEMES.items():
-                print(f"  [{code}] : Hemat={ratio[0]}x, Balanced={ratio[1]}x, Premium={ratio[2]}x")
-            scheme_choice = input("Pilih Skema Rasio Centroid (A-E, default B): ").strip().upper()
-            if scheme_choice not in RATIO_SCHEMES:
-                scheme_choice = "B"
+            print("\nSkema Rasio untuk Perbandingan (berlaku semua nilai c=2..5):")
+            print("  [A] Narrow    — centroid lebih rapat  ±20%")
+            print("  [B] Moderate  — centroid sedang       ±30%")
+            print("  [C] Wide      — centroid lebih lebar  ±40%/±50%  [default]")
+            print("  [D] Very Wide — centroid sangat lebar ±50%/±60%")
+            scheme_choice = input("Pilih Skema Rasio (A-D, default C): ").strip().upper()
+            if scheme_choice not in ["A", "B", "C", "D"]:
+                scheme_choice = "C"
         except ValueError:
             print("❌ Input tidak valid! Menggunakan nilai default.")
             budget = 1500000
             persons = 2
             duration = 2
-            scheme_choice = "B"
+            scheme_choice = "C"
             
         # Alokasikan budget
         if duration == 1:
@@ -1091,18 +1264,16 @@ def menu_optimal_c_search(datasets):
     for c in c_range:
         if fcm_type == "2":
             # Siapkan centroid awal berbasis ratio anchor
-            if c == 3:
-                ratios = RATIO_SCHEMES[scheme_choice]
-            else:
-                ratios = anchored_ratios[c]
-                
+            schemes_c = RATIO_SCHEMES_ALL.get(c, {})
+            sc = scheme_choice if scheme_choice in schemes_c else get_default_scheme(c)
+            ratios = schemes_c[sc]
             init_centers = np.array([cat_anchor * r for r in ratios]).reshape(-1, 1)
             init_centers_flat = init_centers.flatten()
             
             centers, U, labels, iters = fuzzy_c_means_manual(prices, n_clusters=c, m=2.0, init_centroids=init_centers)
         else:
             # Standar Percentile FCM
-            q_vals = np.linspace(15, 85, c)
+            q_vals = np.linspace(100 / (c + 1), 100 * c / (c + 1), c)
             init_centers_flat = np.percentile(prices, q_vals)
             centers, U, labels, iters = fuzzy_c_means_manual(prices, n_clusters=c, m=2.0, init_centroids=init_centers_flat)
             
@@ -1132,20 +1303,12 @@ def menu_recommendation(datasets):
         budget = float(input("Masukkan Total Budget Anda (Rupiah, contoh 1500000): ") or 1500000)
         persons = int(input("Masukkan Jumlah Peserta (orang, default 2): ") or 2)
         duration = int(input("Masukkan Durasi Liburan (hari, default 2): ") or 2)
-        
-        print("\nSkema Rasio Centroid Inisialisasi:")
-        for code, ratio in RATIO_SCHEMES.items():
-            print(f"  [{code}] : Hemat={ratio[0]}x, Balanced={ratio[1]}x, Premium={ratio[2]}x")
-        scheme_choice = input("Pilih Skema Rasio Centroid (A-E, default B): ").strip().upper()
-        if scheme_choice not in RATIO_SCHEMES:
-            scheme_choice = "B"
-            
+
     except ValueError:
         print("❌ Masukan tidak valid! Menggunakan nilai default.")
         budget = 1500000
         persons = 2
         duration = 2
-        scheme_choice = "B"
         
     print(f"\n⚡ Mendistribusikan Budget Rp {budget:,.0f} secara proporsional...")
     
@@ -1178,7 +1341,8 @@ def menu_recommendation(datasets):
         hotel_anchor = allocations["akomodasi"] / np.fmax(nights * num_rooms, 1.0)
         
     wisata_anchor = allocations["wisata"] / persons
-    kuliner_anchor = allocations["kuliner"] / (persons * 2 * duration)
+    total_meals = 3 * (duration - 1) + 2 if duration > 1 else 2
+    kuliner_anchor = allocations["kuliner"] / (persons * total_meals)
     
     # --------------------------------------------------------------------------
     # SIMULASI & PERBANDINGAN XIE-BENI SECARA DINAMIS (c = 2 s/d 5)
@@ -1193,25 +1357,26 @@ def menu_recommendation(datasets):
     xbi_results = {}
     
     for c_val in [2, 3, 4, 5]:
-        xb_wisata = run_budget_anchored_fcm(datasets["wisata"]["Estimasi_Harga"].values, wisata_anchor, ratio_scheme=scheme_choice, n_clusters=c_val)["xb"]
-        xb_hotel = run_budget_anchored_fcm(datasets["hotel"]["Estimasi_Harga"].values, hotel_anchor, ratio_scheme=scheme_choice, n_clusters=c_val)["xb"]
-        xb_kuliner = run_budget_anchored_fcm(datasets["kuliner"]["Estimasi_Harga"].values, kuliner_anchor, ratio_scheme=scheme_choice, n_clusters=c_val)["xb"]
-        
+        sc_default = get_default_scheme(c_val)
+        xb_wisata = run_budget_anchored_fcm(datasets["wisata"]["Estimasi_Harga"].values, wisata_anchor, ratio_scheme=sc_default, n_clusters=c_val)["xb"]
+        xb_hotel = run_budget_anchored_fcm(datasets["hotel"]["Estimasi_Harga"].values, hotel_anchor, ratio_scheme=sc_default, n_clusters=c_val)["xb"]
+        xb_kuliner = run_budget_anchored_fcm(datasets["kuliner"]["Estimasi_Harga"].values, kuliner_anchor, ratio_scheme=sc_default, n_clusters=c_val)["xb"]
+
         avg_xb = (xb_wisata + xb_hotel + xb_kuliner) / 3.0
         xbi_results[c_val] = (xb_wisata, xb_hotel, xb_kuliner, avg_xb)
-        
+
         if avg_xb < min_avg_xb:
             min_avg_xb = avg_xb
             best_c_auto = c_val
-            
+
     for c_val, vals in xbi_results.items():
         w_xb, h_xb, k_xb, avg_xb = vals
         star = " ★ (Terbaik)" if c_val == best_c_auto else ""
         print(f"{c_val:<4} | {w_xb:<14.6f} | {h_xb:<14.6f} | {k_xb:<14.6f} | {avg_xb:<16.6f}{star}")
-        
+
     print("-" * 85)
     print(f"📌 Secara akademis (XBI Terkecil), jumlah klaster terbaik adalah c = {best_c_auto} (Rata-rata XBI: {min_avg_xb:.6f}).")
-    
+
     while True:
         try:
             chosen_c = input(f"👉 Masukkan jumlah klaster (c) yang ingin Anda gunakan (2-5, default {best_c_auto}): ").strip()
@@ -1224,43 +1389,56 @@ def menu_recommendation(datasets):
                 print("❌ Masukkan angka antara 2 s/d 5!")
         except ValueError:
             print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
-            
+
+    show_scheme_xbi_comparison(
+        chosen_c,
+        prices_dict={
+            "wisata":  datasets["wisata"]["Estimasi_Harga"].values,
+            "hotel":   datasets["hotel"]["Estimasi_Harga"].values,
+            "kuliner": datasets["kuliner"]["Estimasi_Harga"].values,
+        },
+        anchors_dict={"wisata": wisata_anchor, "hotel": hotel_anchor, "kuliner": kuliner_anchor},
+    )
+    scheme_choice = ask_ratio_scheme(chosen_c)
+
     candidates = {
         "hotel": {i: [] for i in range(chosen_c)},
         "wisata": {i: [] for i in range(chosen_c)},
         "kuliner": {i: [] for i in range(chosen_c)}
     }
-    
+
     for key in ["hotel", "wisata", "kuliner"]:
         df = datasets[key].copy()
         prices = df["Estimasi_Harga"].values
         cat_anchor = hotel_anchor if key == "hotel" else (wisata_anchor if key == "wisata" else kuliner_anchor)
-        
+
         res = run_budget_anchored_fcm(prices, cat_anchor, ratio_scheme=scheme_choice, n_clusters=chosen_c)
         df["Cluster"] = res["labels"]
-        
-        if chosen_c == 3:
-            ratios = RATIO_SCHEMES[scheme_choice]
-        elif chosen_c == 2:
-            ratios = [0.8, 1.2]
-        elif chosen_c == 4:
-            ratios = [0.5, 0.8, 1.2, 1.5]
-        elif chosen_c == 5:
-            ratios = [0.4, 0.7, 1.0, 1.3, 1.6]
-        else:
-            ratios = np.linspace(0.5, 1.5, chosen_c)
+        df["Region"] = df.apply(lambda row: classify_region(row.get("Latitude", 0), row.get("Longitude", 0)), axis=1)
+
+        ratios = list(RATIO_SCHEMES_ALL[chosen_c][scheme_choice])
             
         for i in range(chosen_c):
             items_in_c = df[df["Cluster"] == i].copy()
             target_price = cat_anchor * ratios[i]
-            
-            if items_in_c.empty:
+
+            best_items_list = []
+            for region in ["Kota Batu", "Kota Malang", "Kabupaten Malang"]:
+                items_in_region = items_in_c[items_in_c["Region"] == region] if not items_in_c.empty else df[df["Region"] == region]
+                if not items_in_region.empty:
+                    items_cp = items_in_region.copy()
+                    items_cp["distance_to_target"] = (items_cp["Estimasi_Harga"] - target_price).abs()
+                    best_items_list.append(items_cp.nsmallest(8, "distance_to_target"))
+
+            if best_items_list:
+                best_items = pd.concat(best_items_list)
+            elif items_in_c.empty:
                 df["distance_to_target"] = (df["Estimasi_Harga"] - target_price).abs()
                 best_items = df.nsmallest(15, "distance_to_target")
             else:
                 items_in_c["distance_to_target"] = (items_in_c["Estimasi_Harga"] - target_price).abs()
                 best_items = items_in_c.nsmallest(15, "distance_to_target")
-                
+
             candidates[key][i] = best_items.to_dict("records")
             
     package_options = {i: [] for i in range(chosen_c)}
@@ -1286,25 +1464,25 @@ def menu_recommendation(datasets):
             return default if (pd.isna(val) or val is None) else float(val)
 
         if i == 0:
-            valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
+            valid_combinations = sorted(valid_combinations, key=lambda x: (x.get("selisih", 0) < 0, x["total_dist"]))
         elif i == chosen_c - 1:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                key=lambda x: (x.get("selisih", 0) < 0, -get_val(x["wisata"], "Rating"), -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
             )
         else:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
+                key=lambda x: (x.get("selisih", 0) < 0, -get_val(x["wisata"], "Rating") * 10 - get_val(x["kuliner"], "Rating") * 2 + x["total_dist"] / 10.0)
             )
-        
-        # Fallback jika kosong (diselaraskan dengan recommender.py & uji_gabungan.py)
+
+        # Fallback jika kosong
         if not valid_combinations:
             min_cost_comb = None
             min_cost = float('inf')
-            for h in hotel_list[:5]:
-                for w in wisata_list[:5]:
-                    for k in kuliner_list[:5]:
+            for h in hotel_list[:15]:
+                for w in wisata_list[:15]:
+                    for k in kuliner_list[:15]:
                         metrics = calculate_pkg_metrics(h, w, k, kuliner_list, duration, persons, num_rooms, nights, wisata_list)
                         if metrics["total_cost"] < min_cost:
                             min_cost = metrics["total_cost"]
@@ -1312,28 +1490,39 @@ def menu_recommendation(datasets):
                             min_cost_comb["selisih"] = budget - metrics["total_cost"]
             if min_cost_comb:
                 valid_combinations.append(min_cost_comb)
-                
-        package_options[i] = valid_combinations[:max_options_to_show[i]]
 
-    # Tampilkan ke Terminal
-    print("\n" + "="*60)
-    print(" 📦  HASIL REKOMENDASI PAKET WISATA MULTI-OPSI (SPASIAL OPTIMIZED)")
-    print("="*60)
-    
-    for i in range(chosen_c):
-        label = get_cluster_label(i, chosen_c)
-        options = package_options[i]
-        
-        print(f"\n=======================================================")
-        print(f" 💼 KELAS PAKET: {label.upper()} (Menyajikan {len(options)} Opsi Terdekat)")
-        print(f"=======================================================")
-        
-        if not options:
-            print(" ⚠️  Tidak ada kombinasi rekomendasi yang tersedia untuk kelas ini.")
-            continue
-            
-        for idx, opt in enumerate(options):
-            print_package_detail(opt, idx, persons, duration, num_rooms, nights, budget=budget, is_flexible=False)
+        # Diversity filter 3-fase: keberagaman wisata utama & hotel
+        diverse_combinations = []
+        selected_wisata_names = set()
+        selected_hotel_names = set()
+
+        for combo in valid_combinations:
+            w_name = combo["wisata"]["Nama_Tempat"]
+            if w_name not in selected_wisata_names:
+                diverse_combinations.append(combo)
+                selected_wisata_names.add(w_name)
+                selected_hotel_names.add(combo["hotel"]["Nama_Tempat"])
+                if len(diverse_combinations) >= max_options_to_show[i]:
+                    break
+
+        if len(diverse_combinations) < max_options_to_show[i]:
+            for combo in valid_combinations:
+                if combo not in diverse_combinations:
+                    h_name = combo["hotel"]["Nama_Tempat"]
+                    if h_name not in selected_hotel_names:
+                        diverse_combinations.append(combo)
+                        selected_hotel_names.add(h_name)
+                        if len(diverse_combinations) >= max_options_to_show[i]:
+                            break
+
+        if len(diverse_combinations) < max_options_to_show[i]:
+            for combo in valid_combinations:
+                if combo not in diverse_combinations:
+                    diverse_combinations.append(combo)
+                    if len(diverse_combinations) >= max_options_to_show[i]:
+                        break
+
+        package_options[i] = diverse_combinations
 
     # Ekspor ke Excel
     excel_rows = []
@@ -1344,22 +1533,28 @@ def menu_recommendation(datasets):
             h_item = opt["hotel"]
             w_item = opt["wisata"]
             k_item = opt["kuliner"]
-            k_malam_item = opt.get("kuliner_malam", k_item)
-            
+            k_pagi_item = opt.get("kuliner_pagi") or k_item
+            k_malam_item = opt.get("kuliner_malam") or k_item
+
             excel_rows.append({
                 "Kelas Paket": label.upper(),
                 "No Opsi": idx + 1,
                 "Nama Hotel": h_item["Nama_Tempat"] if duration > 1 else "Tanpa Hotel (One Day Trip)",
                 "Harga Hotel (Satuan)": h_item["Estimasi_Harga"] if duration > 1 else 0,
                 "Total Biaya Hotel": opt["cost_hotel"],
+                "Wilayah Hotel": classify_region(h_item.get("Latitude", 0), h_item.get("Longitude", 0)),
                 "Nama Wisata": w_item["Nama_Tempat"],
                 "Harga Wisata (Satuan)": w_item["Estimasi_Harga"],
                 "Total Biaya Wisata": opt["cost_wisata"],
+                "Wilayah Wisata": classify_region(w_item.get("Latitude", 0), w_item.get("Longitude", 0)),
+                "Nama Kuliner Pagi": k_pagi_item["Nama_Tempat"],
+                "Harga Kuliner Pagi": k_pagi_item["Estimasi_Harga"],
                 "Nama Kuliner Siang": k_item["Nama_Tempat"],
                 "Harga Kuliner Siang": k_item["Estimasi_Harga"],
                 "Nama Kuliner Malam": k_malam_item["Nama_Tempat"],
                 "Harga Kuliner Malam": k_malam_item["Estimasi_Harga"],
                 "Total Biaya Kuliner": opt["cost_kuliner"],
+                "Wilayah Kuliner": classify_region(k_item.get("Latitude", 0), k_item.get("Longitude", 0)),
                 "Rute Transport (Jarak km)": round(opt["total_dist"], 2),
                 "Armada Transport": opt["transport_desc"],
                 "Biaya Transport": opt["cost_transport"],
@@ -1369,7 +1564,7 @@ def menu_recommendation(datasets):
                 "Kelebihan Anggaran": abs(opt["selisih"]) if opt["selisih"] < 0 else 0,
                 "Status": "UNDER BUDGET" if opt["total_cost"] <= budget else "OVER BUDGET"
             })
-            
+
     if excel_rows:
         try:
             export_df = pd.DataFrame(excel_rows)
@@ -1513,21 +1708,6 @@ def menu_flexible_exploration(datasets):
             )
             
         package_options[i] = valid_combinations[:max_options_to_show[i]]
-        
-    print("\n" + "="*60)
-    print(" 📦  HASIL REKOMENDASI FLEXIBLE EXPLORATION (KLASTER PERSENTIL)")
-    print("="*60)
-    
-    for i in range(chosen_c):
-        label = get_cluster_label(i, chosen_c)
-        options = package_options[i]
-        
-        print(f"\n=======================================================")
-        print(f" 💼 KELAS PAKET: {label.upper()} (Menyajikan {len(options)} Opsi Terdekat)")
-        print(f"=======================================================")
-        
-        for idx, opt in enumerate(options):
-            print_package_detail(opt, idx, persons, duration, num_rooms, nights, budget=None, is_flexible=True)
 
     # Ekspor ke Excel
     excel_rows = []
@@ -1538,22 +1718,28 @@ def menu_flexible_exploration(datasets):
             h_item = opt["hotel"]
             w_item = opt["wisata"]
             k_item = opt["kuliner"]
-            k_malam_item = opt.get("kuliner_malam", k_item)
-            
+            k_pagi_item = opt.get("kuliner_pagi") or k_item
+            k_malam_item = opt.get("kuliner_malam") or k_item
+
             excel_rows.append({
                 "Kelas Paket": label.upper(),
                 "No Opsi": idx + 1,
                 "Nama Hotel": h_item["Nama_Tempat"] if duration > 1 else "Tanpa Hotel (One Day Trip)",
                 "Harga Hotel (Satuan)": h_item["Estimasi_Harga"] if duration > 1 else 0,
                 "Total Biaya Hotel": opt["cost_hotel"],
+                "Wilayah Hotel": classify_region(h_item.get("Latitude", 0), h_item.get("Longitude", 0)),
                 "Nama Wisata": w_item["Nama_Tempat"],
                 "Harga Wisata (Satuan)": w_item["Estimasi_Harga"],
                 "Total Biaya Wisata": opt["cost_wisata"],
+                "Wilayah Wisata": classify_region(w_item.get("Latitude", 0), w_item.get("Longitude", 0)),
+                "Nama Kuliner Pagi": k_pagi_item["Nama_Tempat"],
+                "Harga Kuliner Pagi": k_pagi_item["Estimasi_Harga"],
                 "Nama Kuliner Siang": k_item["Nama_Tempat"],
                 "Harga Kuliner Siang": k_item["Estimasi_Harga"],
                 "Nama Kuliner Malam": k_malam_item["Nama_Tempat"],
                 "Harga Kuliner Malam": k_malam_item["Estimasi_Harga"],
                 "Total Biaya Kuliner": opt["cost_kuliner"],
+                "Wilayah Kuliner": classify_region(k_item.get("Latitude", 0), k_item.get("Longitude", 0)),
                 "Rute Transport (Jarak km)": round(opt["total_dist"], 2),
                 "Armada Transport": opt["transport_desc"],
                 "Biaya Transport": opt["cost_transport"],
@@ -1563,7 +1749,7 @@ def menu_flexible_exploration(datasets):
                 "Kelebihan Anggaran": 0,
                 "Status": "FLEXIBLE EXPLORATION"
             })
-            
+
     if excel_rows:
         try:
             export_df = pd.DataFrame(excel_rows)
@@ -1686,8 +1872,9 @@ def menu_destination_first(datasets):
             except ValueError:
                 print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
                 
+        scheme_choice = get_default_scheme(chosen_c)
         print(f"\n🔄 Menjalankan clustering dengan c = {chosen_c} klaster...")
-        
+
         for cat_name in ["hotel", "kuliner"]:
             df = datasets[cat_name].copy()
             prices = df["Estimasi_Harga"].values
@@ -1698,7 +1885,7 @@ def menu_destination_first(datasets):
             u_matrix = res["u"]
             df["Membership_Degree"] = [float(u_matrix[res["labels"][j], j]) for j in range(len(prices))]
             clustered[cat_name] = {"df": df, "cntr": res["cntr"]}
-            
+
     else:
         # Kondisi A: Dengan Budget (Real-Time FCM Anchor)
         try:
@@ -1738,8 +1925,9 @@ def menu_destination_first(datasets):
         xbi_results = {}
         
         for c_val in [2, 3, 4, 5]:
-            xb_hotel = run_budget_anchored_fcm(datasets["hotel"]["Estimasi_Harga"].values, anchor_hotel, ratio_scheme="B", n_clusters=c_val)["xb"]
-            xb_kuliner = run_budget_anchored_fcm(datasets["kuliner"]["Estimasi_Harga"].values, anchor_kul, ratio_scheme="B", n_clusters=c_val)["xb"]
+            sc_default = get_default_scheme(c_val)
+            xb_hotel = run_budget_anchored_fcm(datasets["hotel"]["Estimasi_Harga"].values, anchor_hotel, ratio_scheme=sc_default, n_clusters=c_val)["xb"]
+            xb_kuliner = run_budget_anchored_fcm(datasets["kuliner"]["Estimasi_Harga"].values, anchor_kul, ratio_scheme=sc_default, n_clusters=c_val)["xb"]
             
             avg_xb = (xb_hotel + xb_kuliner) / 2.0
             xbi_results[c_val] = (xb_hotel, xb_kuliner, avg_xb)
@@ -1768,13 +1956,22 @@ def menu_destination_first(datasets):
                     print("❌ Masukkan angka antara 2 s/d 5!")
             except ValueError:
                 print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
-                
+
+        show_scheme_xbi_comparison(
+            chosen_c,
+            prices_dict={
+                "hotel":   datasets["hotel"]["Estimasi_Harga"].values,
+                "kuliner": datasets["kuliner"]["Estimasi_Harga"].values,
+            },
+            anchors_dict={"hotel": anchor_hotel, "kuliner": anchor_kul},
+        )
+        scheme_choice = ask_ratio_scheme(chosen_c)
         print(f"\n🔄 Menjalankan clustering dengan c = {chosen_c} klaster...")
-        
+
         for cat_name, anchor in [("hotel", anchor_hotel), ("kuliner", anchor_kul)]:
             df = datasets[cat_name].copy()
             prices = df["Estimasi_Harga"].values
-            res = run_budget_anchored_fcm(prices, anchor, ratio_scheme="B", n_clusters=chosen_c)
+            res = run_budget_anchored_fcm(prices, anchor, ratio_scheme=scheme_choice, n_clusters=chosen_c)
             df["Cluster"] = res["labels"]
             print(f"   • [Clustering {cat_name.upper()}] Xie-Beni Index (XBI): {res['xb']:.6f} | Centroids: {['Rp {:,.0f}'.format(c) for c in res['cntr']]}")
             # Hitung membership
@@ -1787,16 +1984,7 @@ def menu_destination_first(datasets):
         "kuliner": {i: [] for i in range(chosen_c)}
     }
     
-    if chosen_c == 3:
-        ratios = RATIO_SCHEMES["B"]
-    elif chosen_c == 2:
-        ratios = [0.8, 1.2]
-    elif chosen_c == 4:
-        ratios = [0.5, 0.8, 1.2, 1.5]
-    elif chosen_c == 5:
-        ratios = [0.4, 0.7, 1.0, 1.3, 1.6]
-    else:
-        ratios = np.linspace(0.5, 1.5, chosen_c)
+    ratios = list(RATIO_SCHEMES_ALL[chosen_c][scheme_choice])
         
     for key in ["hotel", "kuliner"]:
         df = clustered[key]["df"]
@@ -1830,7 +2018,7 @@ def menu_destination_first(datasets):
         valid_combinations = []
         for h in hotel_list:
             for k in kuliner_list:
-                metrics = calculate_pkg_metrics(h, selected_dest, k, kuliner_list, duration, persons, num_rooms, nights, top_wisata_list, is_destination_first=True)
+                metrics = calculate_pkg_metrics(h, selected_dest, k, kuliner_list, duration, persons, num_rooms, nights, top_wisata_list)
                 if cond_choice == "2" or metrics["total_cost"] <= budget:
                     metrics["selisih"] = (budget - metrics["total_cost"]) if cond_choice == "1" else 0.0
                     valid_combinations.append(metrics)
@@ -1840,16 +2028,16 @@ def menu_destination_first(datasets):
             return default if (pd.isna(val) or val is None) else float(val)
 
         if i == 0:
-            valid_combinations = sorted(valid_combinations, key=lambda x: x["total_dist"])
+            valid_combinations = sorted(valid_combinations, key=lambda x: (x.get("selisih", 0) < 0, x["total_dist"]))
         elif i == chosen_c - 1:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
+                key=lambda x: (x.get("selisih", 0) < 0, -get_val(x["hotel"], "Estimasi_Harga"), x["total_dist"])
             )
         else:
             valid_combinations = sorted(
                 valid_combinations,
-                key=lambda x: (-get_val(x["kuliner"], "Rating") * 5 + x["total_dist"] / 10.0)
+                key=lambda x: (x.get("selisih", 0) < 0, -get_val(x["kuliner"], "Rating") * 5 + x["total_dist"] / 10.0)
             )
             
         # Fallback jika kosong (hanya berlaku jika pakai budget / Kondisi A)
@@ -1858,7 +2046,7 @@ def menu_destination_first(datasets):
             min_cost = float('inf')
             for h in hotel_list[:5]:
                 for k in kuliner_list[:5]:
-                    metrics = calculate_pkg_metrics(h, selected_dest, k, kuliner_list, duration, persons, num_rooms, nights, top_wisata_list, is_destination_first=True)
+                    metrics = calculate_pkg_metrics(h, selected_dest, k, kuliner_list, duration, persons, num_rooms, nights, top_wisata_list)
                     if metrics["total_cost"] < min_cost:
                         min_cost = metrics["total_cost"]
                         min_cost_comb = metrics
@@ -1867,24 +2055,6 @@ def menu_destination_first(datasets):
                 valid_combinations.append(min_cost_comb)
                 
         package_options[i] = valid_combinations[:max_options_to_show[i]]
-        
-    print("\n" + "="*60)
-    print(" 📦  HASIL REKOMENDASI DESTINATION-FIRST (SINKRON DENGAN RECOMMENDER.PY)")
-    print("="*60)
-    
-    for i in range(chosen_c):
-        label = get_cluster_label(i, chosen_c)
-        options = package_options[i]
-        
-        print(f"\n=======================================================")
-        print(f" 💼 KELAS PAKET: {label.upper()} (Menyajikan {len(options)} Opsi Terdekat)")
-        print(f"=======================================================")
-        
-        for idx, opt in enumerate(options):
-            if cond_choice == "1":
-                print_package_detail(opt, idx, persons, duration, num_rooms, nights, budget=budget, is_flexible=False)
-            else:
-                print_package_detail(opt, idx, persons, duration, num_rooms, nights, budget=None, is_flexible=True, custom_status="EKSPLORASI SPASIAL (TANPA BUDGET)")
 
     # Ekspor ke Excel
     excel_rows = []
@@ -1895,22 +2065,28 @@ def menu_destination_first(datasets):
             h_item = opt["hotel"]
             w_item = opt["wisata"]
             k_item = opt["kuliner"]
-            k_malam_item = opt.get("kuliner_malam", k_item)
-            
+            k_pagi_item = opt.get("kuliner_pagi") or k_item
+            k_malam_item = opt.get("kuliner_malam") or k_item
+
             excel_rows.append({
                 "Kelas Paket": label.upper(),
                 "No Opsi": idx + 1,
                 "Nama Hotel": h_item["Nama_Tempat"] if duration > 1 else "Tanpa Hotel (One Day Trip)",
                 "Harga Hotel (Satuan)": h_item["Estimasi_Harga"] if duration > 1 else 0,
                 "Total Biaya Hotel": opt["cost_hotel"],
+                "Wilayah Hotel": classify_region(h_item.get("Latitude", 0), h_item.get("Longitude", 0)),
                 "Nama Wisata": w_item["Nama_Tempat"],
                 "Harga Wisata (Satuan)": w_item["Estimasi_Harga"],
                 "Total Biaya Wisata": opt["cost_wisata"],
+                "Wilayah Wisata": classify_region(w_item.get("Latitude", 0), w_item.get("Longitude", 0)),
+                "Nama Kuliner Pagi": k_pagi_item["Nama_Tempat"],
+                "Harga Kuliner Pagi": k_pagi_item["Estimasi_Harga"],
                 "Nama Kuliner Siang": k_item["Nama_Tempat"],
                 "Harga Kuliner Siang": k_item["Estimasi_Harga"],
                 "Nama Kuliner Malam": k_malam_item["Nama_Tempat"],
                 "Harga Kuliner Malam": k_malam_item["Estimasi_Harga"],
                 "Total Biaya Kuliner": opt["cost_kuliner"],
+                "Wilayah Kuliner": classify_region(k_item.get("Latitude", 0), k_item.get("Longitude", 0)),
                 "Rute Transport (Jarak km)": round(opt["total_dist"], 2),
                 "Armada Transport": opt["transport_desc"],
                 "Biaya Transport": opt["cost_transport"],

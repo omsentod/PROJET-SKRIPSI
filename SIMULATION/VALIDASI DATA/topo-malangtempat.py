@@ -38,6 +38,7 @@ DATASETS = [
     ('Hotel V2',           'hotelv2.xlsx',              'Hotel',         'V2'),
     ('Tempat Makan V2',    'tempat_makanV2.xlsx',       'Tempat Makan',  'V2'),
     ('Wisata V2',          'tempat_wisataV2.xlsx',      'Wisata',        'V2'),
+    ('Coffee Shop',        'coffee.xlsx',               'Coffee',        'V2'),
 ]
 
 # ==============================================================================
