@@ -10,10 +10,9 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from webdriver_manager.chrome import ChromeDriverManager
 
-# ================= KONFIGURASI =================
+
 FILE_INPUT = 'wisataV2_updated.xlsx' 
-KATEGORI = 'wisata' # 'wisata' atau 'hotel'
-# ===============================================
+KATEGORI = 'wisata'
 
 def init_driver():
     options = webdriver.ChromeOptions()
@@ -24,15 +23,14 @@ def init_driver():
     options.add_experimental_option('useAutomationExtension', False)
     
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    driver.set_page_load_timeout(40) # Timeout loading halaman 40 detik
+    driver.set_page_load_timeout(40) 
     return driver
 
 def is_relevant(text, name):
-    # Bersihkan nama tempat dari tanda baca dan karakter khusus
+   
     name_clean = re.sub(r'[\(\)\-\:\,\.\/\|]', ' ', name.lower())
     
-    # Ambil kata-kata penting yang panjangnya > 2 karakter
-    # Abaikan kata umum/wisata yang tidak spesifik
+
     stopwords = ["wisata", "obyek", "objek", "kota", "kabupaten", "malang", "batu", "area", "tempat", "lokasi", "desa", "kecamatan", "dan"]
     words = [w for w in name_clean.split() if len(w) > 2 and w not in stopwords]
     
@@ -51,10 +49,7 @@ def is_relevant(text, name):
             # Fallback jika tidak ada boundary (misal tersambung tanda baca)
             match_count += 0.5
             
-    # Aturan ambang batas (Threshold) pencocokan:
-    # - Jika hanya ada 1 kata kunci penting: wajib cocok (match_count >= 1)
-    # - Jika ada 2 kata kunci penting: wajib cocok minimal 1 (match_count >= 1)
-    # - Jika ada 3 atau lebih kata kunci penting: wajib cocok minimal 1.5 (match_count >= 1.5)
+
     if len(words) <= 2:
         return match_count >= 1
     else:
@@ -63,7 +58,6 @@ def is_relevant(text, name):
 def extract_price_from_text(text):
     text_lower = text.lower()
     
-    # 1. Cari kandidat harga non-nol terlebih dahulu
     pola_harga = r'(?:rp\.?|idr)\s?(\d{1,3}(?:[.,]\d{3})+(?:\d{3})?)'
     matches = re.finditer(pola_harga, text_lower)
     

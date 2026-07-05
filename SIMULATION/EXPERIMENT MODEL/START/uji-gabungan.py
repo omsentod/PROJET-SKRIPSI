@@ -8,7 +8,7 @@ import pandas as pd
 # ==============================================================================
 RATIO_SCHEMES_ALL = {
     2: {
-        "A": (0.8, 1.2),                        # Narrow    ±20%
+        "A": (0.5, 1.5),                        # Very Wide ±50%  [Skema D — semua skema c=2 identik]
         "B": (0.7, 1.3),                        # Moderate  ±30%
         "C": (0.6, 1.4),                        # Wide      ±40%  [Utama]
         "D": (0.5, 1.5),                        # Very Wide ±50%
@@ -36,7 +36,7 @@ RATIO_SCHEMES_ALL = {
 
 RATIO_SCHEME_LABELS = {
     2: {
-        "A": "Narrow     (0.8× ; 1.2×)                                    ±20%",
+        "A": "Very Wide  (0.5× ; 1.5×)                                    ±50%  [≡ Skema D]",
         "B": "Moderate   (0.7× ; 1.3×)                                    ±30%",
         "C": "Wide       (0.6× ; 1.4×)                                    ±40%  [Utama]",
         "D": "Very Wide  (0.5× ; 1.5×)                                    ±50%",
@@ -971,11 +971,11 @@ def display_ratio_schemes(c):
         print(f"  [{code}] {label}{default_mark}")
     print("-" * 72)
 
-def ask_ratio_scheme(c):
+def ask_ratio_scheme(c, suggested=None):
     display_ratio_schemes(c)
     schemes = RATIO_SCHEMES_ALL.get(c, {})
     valid_codes = list(schemes.keys())
-    default = get_default_scheme(c)
+    default = suggested if (suggested is not None and suggested in schemes) else get_default_scheme(c)
     codes_str = "/".join(valid_codes)
     choice = input(f"Pilih Skema Rasio ({codes_str}, default {default}): ").strip().upper()
     if choice not in schemes:
@@ -984,9 +984,8 @@ def ask_ratio_scheme(c):
 
 def show_scheme_xbi_comparison(c, prices_dict, anchors_dict):
     """
-    Tampilkan perbandingan skema rasio: multiplier, target harga seleksi, dan XBI.
-    XBI bisa identik antar skema (FCM konvergen sama) — yang berbeda adalah
-    target harga yang dipakai untuk memilih item kandidat di tiap klaster.
+    Tampilkan perbandingan XBI antar skema rasio untuk c klaster.
+    Jika XBI identik (range < 1%), tampilkan target harga seleksi per skema.
     """
     schemes = RATIO_SCHEMES_ALL.get(c, {})
     labels  = RATIO_SCHEME_LABELS.get(c, {})
@@ -997,7 +996,7 @@ def show_scheme_xbi_comparison(c, prices_dict, anchors_dict):
     cluster_names = [get_cluster_label(i, c) for i in range(c)]
     col_w         = 13
 
-    # ── Hitung XBI per skema ──────────────────────────────────────────────────
+    # Hitung XBI per skema
     results   = {}
     best_code = None
     best_avg  = float('inf')
@@ -1012,13 +1011,12 @@ def show_scheme_xbi_comparison(c, prices_dict, anchors_dict):
         if avg < best_avg:
             best_avg, best_code = avg, code
 
-    # Anggap "sama" jika range < 1% dari rata-rata (perbedaan tidak bermakna)
+    # Anggap "sama" jika range < 1% dari rata-rata
     avg_xbs   = [v[1] for v in results.values()]
     xbi_range = max(avg_xbs) - min(avg_xbs)
     xbi_mean  = sum(avg_xbs) / len(avg_xbs) if avg_xbs else 1
     all_xbi_equal = (xbi_range / xbi_mean) < 0.01
 
-    # ── Header tabel ──────────────────────────────────────────────────────────
     xbi_cols = " | ".join([f"{(cat.upper() + ' XBI'):<{col_w}}" for cat in cats])
     avg_col  = f" | {'Avg XBI':<{col_w}}" if len(cats) > 1 else ""
     ratio_w  = max(40, c * 10)
@@ -1029,36 +1027,32 @@ def show_scheme_xbi_comparison(c, prices_dict, anchors_dict):
     print(sep)
     print(f"  {'Skema':<6} | {'Rasio (' + ' | '.join(cluster_names) + ')':<{ratio_w}} | {xbi_cols}{avg_col}")
     print(sep)
-
     for code, (xb_list, avg) in results.items():
-        star     = " ★ (Terbaik)" if (code == best_code and not all_xbi_equal) else ""
+        star      = " ★ (Terbaik)" if (code == best_code and not all_xbi_equal) else ""
         ratio_str = "  ".join([f"{r}×" for r in schemes[code]])
-        xbi_str  = " | ".join([f"{v:<{col_w}.6f}" for v in xb_list])
-        avg_str  = f" | {avg:<{col_w}.6f}" if len(cats) > 1 else ""
+        xbi_str   = " | ".join([f"{v:<{col_w}.6f}" for v in xb_list])
+        avg_str   = f" | {avg:<{col_w}.6f}" if len(cats) > 1 else ""
         print(f"  [{code}]    | {ratio_str:<{ratio_w}} | {xbi_str}{avg_str}{star}")
-
     print(sep)
 
     if all_xbi_equal:
-        # XBI identik → jelaskan perbedaan lewat target harga seleksi
         print(f"  ⚠️  XBI identik di semua skema — FCM konvergen ke klaster yang sama.")
         print(f"     Yang BERBEDA adalah TARGET HARGA SELEKSI item kandidat per klaster:\n")
-        # Tampilkan target harga per skema untuk setiap kategori
         for cat in cats:
             anchor = anchors_dict[cat]
             print(f"     ── {cat.upper()} (anchor = Rp {anchor:,.0f}) ──")
             for code in schemes:
-                ratios   = schemes[code]
-                targets  = "  |  ".join(
-                    [f"{get_cluster_label(i, c)}=Rp{anchor * ratios[i]:,.0f}"
-                     for i in range(c)]
+                ratios  = schemes[code]
+                targets = "  |  ".join(
+                    [f"{get_cluster_label(i, c)}=Rp{anchor * ratios[i]:,.0f}" for i in range(c)]
                 )
                 marker = " ← default" if code == get_default_scheme(c) else ""
                 print(f"     [{code}]  {targets}{marker}")
             print()
     else:
         print(f"  💡 Skema terbaik (XBI terkecil): [{best_code}] {labels.get(best_code, '').strip()}")
-        print()
+    print()
+    return best_code
 
 def run_budget_anchored_fcm(data_prices, budget, ratio_scheme=None, n_clusters=3, m=2.0):
     schemes_for_c = RATIO_SCHEMES_ALL.get(n_clusters)
@@ -1390,7 +1384,7 @@ def menu_recommendation(datasets):
         except ValueError:
             print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
 
-    show_scheme_xbi_comparison(
+    best_scheme = show_scheme_xbi_comparison(
         chosen_c,
         prices_dict={
             "wisata":  datasets["wisata"]["Estimasi_Harga"].values,
@@ -1399,7 +1393,7 @@ def menu_recommendation(datasets):
         },
         anchors_dict={"wisata": wisata_anchor, "hotel": hotel_anchor, "kuliner": kuliner_anchor},
     )
-    scheme_choice = ask_ratio_scheme(chosen_c)
+    scheme_choice = ask_ratio_scheme(chosen_c, suggested=best_scheme)
 
     candidates = {
         "hotel": {i: [] for i in range(chosen_c)},
@@ -1957,7 +1951,7 @@ def menu_destination_first(datasets):
             except ValueError:
                 print("❌ Input tidak valid! Masukkan angka antara 2 s/d 5.")
 
-        show_scheme_xbi_comparison(
+        best_scheme = show_scheme_xbi_comparison(
             chosen_c,
             prices_dict={
                 "hotel":   datasets["hotel"]["Estimasi_Harga"].values,
@@ -1965,7 +1959,7 @@ def menu_destination_first(datasets):
             },
             anchors_dict={"hotel": anchor_hotel, "kuliner": anchor_kul},
         )
-        scheme_choice = ask_ratio_scheme(chosen_c)
+        scheme_choice = ask_ratio_scheme(chosen_c, suggested=best_scheme)
         print(f"\n🔄 Menjalankan clustering dengan c = {chosen_c} klaster...")
 
         for cat_name, anchor in [("hotel", anchor_hotel), ("kuliner", anchor_kul)]:

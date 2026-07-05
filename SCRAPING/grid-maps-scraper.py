@@ -478,3 +478,4 @@ if __name__ == "__main__":
         run_grid_scraper(keyword_input, step_size=0.03, min_rating=min_rating, min_reviews=min_reviews)
     else:
         run_grid_scraper(keyword_input, step_size=0.05, min_rating=min_rating, min_reviews=min_reviews)
+ 
