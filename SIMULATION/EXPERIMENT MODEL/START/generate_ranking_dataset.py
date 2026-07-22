@@ -10,23 +10,21 @@ from openpyxl.utils import get_column_letter
 # 1. PARAMETER & KONFIGURASI GLOBAL
 # ==============================================================================
 RATIO_SCHEMES = {
-    "A": (0.5, 1.0, 1.5),
-    "B": (0.6, 1.0, 1.4), # Skema utama skripsi
-    "C": (0.7, 1.0, 1.3),
-    "D": (0.5, 1.0, 2.0),
-    "E": (0.8, 1.0, 1.2),
+    "A": (0.5, 1.5),
+    "B": (0.7, 1.3),
+    "C": (0.6, 1.4), # Skema utama skripsi
+    "D": (0.5, 1.5),
 }
 
 CLUSTER_LABELS = {
     0: "Hemat",
-    1: "Balanced",
-    2: "Premium",
+    1: "Premium",
 }
 
 # ==============================================================================
 # 2. ALGORITMA FUZZY C-MEANS (FCM) MANUAL (NUMPY MURNI)
 # ==============================================================================
-def fuzzy_c_means_manual(data, n_clusters=3, m=2.0, error=1e-5, max_iter=300, init_centroids=None, seed=42):
+def fuzzy_c_means_manual(data, n_clusters=2, m=2.0, error=1e-5, max_iter=300, init_centroids=None, seed=42):
     n_samples = len(data)
     if len(data.shape) == 1:
         data = data.reshape(-1, 1)
@@ -104,13 +102,11 @@ def calculate_xie_beni_metrics(data, centers, U, m=2.0):
     return xb, sigma, sep
 
 def run_percentile_fcm(data_prices, m=2.0):
-    q1 = np.percentile(data_prices, 25)
-    median = np.percentile(data_prices, 50)
-    q3 = np.percentile(data_prices, 75)
-    init_centers = np.array([q1, median, q3]).reshape(-1, 1)
+    q_vals = np.linspace(100 / 3, 200 / 3, 2)
+    init_centers = np.percentile(data_prices, q_vals).reshape(-1, 1)
     
     centers, U, labels, iters, centers_history = fuzzy_c_means_manual(
-        data_prices, n_clusters=3, m=m, init_centroids=init_centers
+        data_prices, n_clusters=2, m=m, init_centroids=init_centers
     )
     
     sorted_idx = np.argsort(centers.flatten())
@@ -120,12 +116,12 @@ def run_percentile_fcm(data_prices, m=2.0):
     
     return sorted_cntr, sorted_u, sorted_labels, iters, centers_history
 
-def run_budget_anchored_fcm(data_prices, budget, ratio_scheme="B", m=2.0):
+def run_budget_anchored_fcm(data_prices, budget, ratio_scheme="C", m=2.0):
     ratios = RATIO_SCHEMES[ratio_scheme]
     init_centers = np.array([budget * r for r in ratios]).reshape(-1, 1)
     
     centers, U, labels, iters, centers_history = fuzzy_c_means_manual(
-        data_prices, n_clusters=3, m=m, init_centroids=init_centers
+        data_prices, n_clusters=2, m=m, init_centroids=init_centers
     )
     
     sorted_idx = np.argsort(centers.flatten())
@@ -160,8 +156,8 @@ def get_transport_cost(num_persons, distance_km):
     return round(distance_km * rate), desc
 
 def get_candidates(df, cluster_labels, centroids, anchor=None, ratios=None):
-    candidates = {0: [], 1: [], 2: []}
-    for i in range(3):
+    candidates = {0: [], 1: []}
+    for i in range(2):
         items_c = df[cluster_labels == i].copy()
         target_price = anchor * ratios[i] if anchor is not None else centroids[i]
         
@@ -181,11 +177,11 @@ def get_budget_first_packages(df_wis, df_hot, df_kul, w_lbl, h_lbl, k_lbl, w_cnt
     h_cand = get_candidates(df_hot, h_lbl, h_cntr, anchor_h, ratios)
     k_cand = get_candidates(df_kul, k_lbl, k_cntr, anchor_k, ratios)
     
-    pkg_res = {0: [], 1: [], 2: []}
+    pkg_res = {0: [], 1: []}
     rooms = math.ceil(DEFAULT_PERSONS / 2.0)
     nights = max(DEFAULT_DURATION - 1, 1)
     
-    for i in range(3):
+    for i in range(2):
         comb_list = []
         for h in h_cand[i]:
             for w in w_cand[i]:
@@ -204,8 +200,6 @@ def get_budget_first_packages(df_wis, df_hot, df_kul, w_lbl, h_lbl, k_lbl, w_cnt
                        
         if i == 0:
             comb_list = sorted(comb_list, key=lambda x: x[3])
-        elif i == 1:
-            comb_list = sorted(comb_list, key=lambda x: (-x[1].get("Rating", 0)*10 - x[2].get("Rating", 0)*2 + x[3]/10.0))
         else:
             comb_list = sorted(comb_list, key=lambda x: (-x[1].get("Rating", 0), -x[0].get("Estimasi_Harga", 0), x[3]))
             
@@ -217,11 +211,11 @@ def get_flexible_packages(df_wis, df_hot, df_kul, w_lbl, h_lbl, k_lbl, w_cntr, h
     h_cand = get_candidates(df_hot, h_lbl, h_cntr)
     k_cand = get_candidates(df_kul, k_lbl, k_cntr)
     
-    pkg_res = {0: [], 1: [], 2: []}
+    pkg_res = {0: [], 1: []}
     rooms = math.ceil(DEFAULT_PERSONS / 2.0)
     nights = max(DEFAULT_DURATION - 1, 1)
     
-    for i in range(3):
+    for i in range(2):
         comb_list = []
         for h in h_cand[i][:8]:
             for w in w_cand[i][:8]:
@@ -238,8 +232,6 @@ def get_flexible_packages(df_wis, df_hot, df_kul, w_lbl, h_lbl, k_lbl, w_cntr, h
                     
         if i == 0:
             comb_list = sorted(comb_list, key=lambda x: x[3])
-        elif i == 1:
-            comb_list = sorted(comb_list, key=lambda x: (-x[1].get("Rating", 0)*10 - x[2].get("Rating", 0)*2 + x[3]/10.0))
         else:
             comb_list = sorted(comb_list, key=lambda x: (-x[1].get("Rating", 0), -x[0].get("Estimasi_Harga", 0), x[3]))
             
@@ -250,11 +242,11 @@ def get_dest_first_packages(df_wis, df_hot, df_kul, h_lbl, k_lbl, h_cntr, k_cntr
     h_cand = get_candidates(df_hot, h_lbl, h_cntr, anchor_h_dest, ratios)
     k_cand = get_candidates(df_kul, k_lbl, k_cntr, anchor_k_dest, ratios)
     
-    pkg_res = {0: [], 1: [], 2: []}
+    pkg_res = {0: [], 1: []}
     rooms = math.ceil(DEFAULT_PERSONS / 2.0)
     nights = max(DEFAULT_DURATION - 1, 1)
     
-    for i in range(3):
+    for i in range(2):
         comb_list = []
         for h in h_cand[i]:
             for k in k_cand[i]:
@@ -272,8 +264,6 @@ def get_dest_first_packages(df_wis, df_hot, df_kul, h_lbl, k_lbl, h_cntr, k_cntr
                     
         if i == 0:
             comb_list = sorted(comb_list, key=lambda x: x[3])
-        elif i == 1:
-            comb_list = sorted(comb_list, key=lambda x: (-x[2].get("Rating", 0)*5 + x[3]/10.0))
         else:
             comb_list = sorted(comb_list, key=lambda x: (-x[0].get("Estimasi_Harga", 0), x[3]))
             
@@ -298,7 +288,7 @@ df_kuliner["Estimasi_Harga"] = df_kuliner["Estimasi_Harga"].astype(float)
 DEFAULT_BUDGET = 1500000.0
 DEFAULT_PERSONS = 1   # Skenario 1 orang
 DEFAULT_DURATION = 2  # Skenario 2 hari (1 Malam)
-DEFAULT_SCHEME = "B"
+DEFAULT_SCHEME = "C"
 
 # ID Destinasi Ekstrem Wisata
 CHEAPEST_WISATA_ID = 40     # Gua Maria Sendang Purwaningsih, HTM Rp 0
@@ -369,7 +359,7 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
         ws.views.sheetView[0].showGridLines = True
         
         # Banner Atas
-        ws.merge_cells("A1:K2")
+        ws.merge_cells("A1:J2")
         ws["A1"] = f"HASIL PERANGKINGAN DATASET - {sheet_name.replace('_', ' ').upper()}"
         ws["A1"].font = font_title
         ws["A1"].fill = fill_dark
@@ -431,14 +421,13 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
         ws.cell(row=5, column=7).alignment = align_center
         ws.cell(row=5, column=7).border = thin_border
         
-        for idx in range(3):
+        for idx in range(2):
             r = 6 + idx
             lbl = CLUSTER_LABELS[idx].upper()
             cell_lbl = ws.cell(row=r, column=5, value=lbl)
             cell_lbl.font = font_bold
             cell_lbl.border = thin_border
             if idx == 0: cell_lbl.fill = fill_hemat
-            elif idx == 1: cell_lbl.fill = fill_balanced
             else: cell_lbl.fill = fill_premium
             
             cell_c = ws.cell(row=r, column=6, value=float(data_pkg["centroids"][idx]))
@@ -454,12 +443,12 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
             cell_a.alignment = align_right
             cell_a.border = thin_border
             
-        # Riwayat Iterasi Centroid Table (Kolom M s.d. P)
+        # Riwayat Iterasi Centroid Table (Kolom M s.d. O)
         ws["M4"] = "RIWAYAT ITERASI PUSAT KLASTER (CENTROID HISTORY)"
         ws["M4"].font = font_section
-        ws.merge_cells("M4:P4")
+        ws.merge_cells("M4:O4")
         
-        hist_headers = ["Iterasi", "Centroid Hemat (Rp)", "Centroid Balanced (Rp)", "Centroid Premium (Rp)"]
+        hist_headers = ["Iterasi", "Centroid Hemat (Rp)", "Centroid Premium (Rp)"]
         for c_idx, h in enumerate(hist_headers):
             cell_h = ws.cell(row=5, column=13+c_idx, value=h)
             cell_h.font = font_header
@@ -479,7 +468,7 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
             cell_it.border = thin_border
             cell_it.fill = fill_soft_gray
             
-            for idx in range(3):
+            for idx in range(2):
                 cell_val = ws.cell(row=r, column=14+idx, value=float(centers_step[idx]))
                 cell_val.font = font_regular
                 cell_val.number_format = "Rp #,##0"
@@ -489,7 +478,7 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
         # Table Header
         headers = [
             "Ranking (No Opsi)", "ID Tempat", "Nama Tempat", "Harga Asli (Rp)", 
-            "Jenis Paket", "U_Hemat", "U_Balanced", "U_Premium", 
+            "Jenis Paket", "U_Hemat", "U_Premium", 
             "Target Harga (Rp)", "Selisih ke Target (Rp)", "Rating"
         ]
         
@@ -526,36 +515,34 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
             cell_lbl.font = font_bold
             cell_lbl.alignment = align_center
             if row["Cluster_Label"] == "Hemat": cell_lbl.fill = fill_hemat
-            elif row["Cluster_Label"] == "Balanced": cell_lbl.fill = fill_balanced
             else: cell_lbl.fill = fill_premium
             
             # Membership
             ws.cell(row=r, column=6, value=float(row["U_Hemat"])).number_format = "0.0000"
-            ws.cell(row=r, column=7, value=float(row["U_Balanced"])).number_format = "0.0000"
-            ws.cell(row=r, column=8, value=float(row["U_Premium"])).number_format = "0.0000"
+            ws.cell(row=r, column=7, value=float(row["U_Premium"])).number_format = "0.0000"
             
-            for c in [6, 7, 8]:
+            for c in [6, 7]:
                 ws.cell(row=r, column=c).alignment = align_right
             
             # Target Harga & Selisih
-            cell_t = ws.cell(row=r, column=9, value=float(row["Target_Price"]) if pd.notna(row["Target_Price"]) else "-")
+            cell_t = ws.cell(row=r, column=8, value=float(row["Target_Price"]) if pd.notna(row["Target_Price"]) else "-")
             if pd.notna(row["Target_Price"]):
                 cell_t.number_format = "Rp #,##0"
             cell_t.alignment = align_right
             
-            cell_d = ws.cell(row=r, column=10, value=float(row["Selisih_Harga"]) if pd.notna(row["Selisih_Harga"]) else "-")
+            cell_d = ws.cell(row=r, column=9, value=float(row["Selisih_Harga"]) if pd.notna(row["Selisih_Harga"]) else "-")
             if pd.notna(row["Selisih_Harga"]):
                 cell_d.number_format = "Rp #,##0"
             cell_d.alignment = align_right
             
             # Rating
             rating_val = row.get("Rating", 0.0)
-            cell_rt = ws.cell(row=r, column=11, value=float(rating_val) if pd.notna(rating_val) else 0.0)
+            cell_rt = ws.cell(row=r, column=10, value=float(rating_val) if pd.notna(rating_val) else 0.0)
             cell_rt.number_format = "0.0"
             cell_rt.alignment = align_center
             
             # Borders & Fonts
-            for c in range(1, 12):
+            for c in range(1, 11):
                 ws.cell(row=r, column=c).border = thin_border
                 if c != 1 and c != 5:
                     ws.cell(row=r, column=c).font = font_regular
@@ -582,7 +569,7 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
     
     r_cursor = 6
     
-    classes_names = ["PAKET HEMAT (BUDGET)", "PAKET BALANCED (SEDANG)", "PAKET PREMIUM (MEWAH)"]
+    classes_names = ["PAKET HEMAT (BUDGET)", "PAKET PREMIUM (MEWAH)"]
     
     for idx_cl, cl_name in enumerate(classes_names):
         ws_pkg.cell(row=r_cursor, column=1, value=cl_name).font = font_section
@@ -703,7 +690,7 @@ def generate_ranking_excel(filename, workflow_title, wisata_data, hotel_data, ku
 print("⚡ Memproses data untuk [Workflow 1: Budget-First]...")
 
 def prepare_budget_first_data(df, prices, cntr, U, lbl, anchor, iters_val, centers_history):
-    ratios = RATIO_SCHEMES["B"]
+    ratios = RATIO_SCHEMES[DEFAULT_SCHEME]
     xb, sigma, sep = calculate_xie_beni_metrics(prices, cntr, U)
     
     # Buat Dataframe hasil
@@ -711,21 +698,20 @@ def prepare_budget_first_data(df, prices, cntr, U, lbl, anchor, iters_val, cente
     df_res["Cluster"] = lbl
     df_res["Cluster_Label"] = [CLUSTER_LABELS[l] for l in lbl]
     df_res["U_Hemat"] = U[0, :]
-    df_res["U_Balanced"] = U[1, :]
-    df_res["U_Premium"] = U[2, :]
+    df_res["U_Premium"] = U[1, :]
     
     # Target prices
     targets = [anchor * r for r in ratios]
     df_res["Target_Price"] = [targets[l] for l in lbl]
     df_res["Selisih_Harga"] = (df_res["Estimasi_Harga"] - df_res["Target_Price"]).abs()
     
-    # Perangkingan: Diurutkan berdasarkan Cluster (Hemat -> Balanced -> Premium),
+    # Perangkingan: Diurutkan berdasarkan Cluster (Hemat -> Premium),
     # dan di dalam setiap klaster, diurutkan berdasarkan Selisih Harga ke Target (Terdekat)
     df_res = df_res.sort_values(by=["Cluster", "Selisih_Harga"], ascending=[True, True]).reset_index(drop=True)
     
     # Tambah kolom Ranking (No Opsi)
     rankings = []
-    for c_idx in [0, 1, 2]:
+    for c_idx in [0, 1]:
         sub_df = df_res[df_res["Cluster"] == c_idx]
         rankings.extend(range(1, len(sub_df) + 1))
     df_res["Ranking"] = rankings
@@ -749,8 +735,7 @@ def prepare_flexible_data(df, prices, cntr, U, lbl, iters_val, centers_history):
     df_res["Cluster"] = lbl
     df_res["Cluster_Label"] = [CLUSTER_LABELS[l] for l in lbl]
     df_res["U_Hemat"] = U[0, :]
-    df_res["U_Balanced"] = U[1, :]
-    df_res["U_Premium"] = U[2, :]
+    df_res["U_Premium"] = U[1, :]
     
     # Target price di flexible adalah centroid itu sendiri
     df_res["Target_Price"] = [cntr[l] for l in lbl]
@@ -767,7 +752,7 @@ def prepare_flexible_data(df, prices, cntr, U, lbl, iters_val, centers_history):
     df_res = df_res.sort_values(by=["Cluster", "Membership_Degree"], ascending=[True, False]).reset_index(drop=True)
     
     rankings = []
-    for c_idx in [0, 1, 2]:
+    for c_idx in [0, 1]:
         sub_df = df_res[df_res["Cluster"] == c_idx]
         rankings.extend(range(1, len(sub_df) + 1))
     df_res["Ranking"] = rankings
@@ -791,8 +776,7 @@ def prepare_dest_first_wisata_data(df, prices, cntr, U, lbl, locked_item, iters_
     df_res["Cluster"] = lbl
     df_res["Cluster_Label"] = [CLUSTER_LABELS[l] for l in lbl]
     df_res["U_Hemat"] = U[0, :]
-    df_res["U_Balanced"] = U[1, :]
-    df_res["U_Premium"] = U[2, :]
+    df_res["U_Premium"] = U[1, :]
     
     # Target price & selisih
     df_res["Target_Price"] = np.nan
@@ -824,7 +808,7 @@ def prepare_dest_first_wisata_data(df, prices, cntr, U, lbl, locked_item, iters_
         "sorted_df": df_res
     }
 
-w_bf_data_temp = prepare_budget_first_data(df_wisata, df_wisata["Estimasi_Harga"].values, np.zeros((3,1)), np.zeros((3, len(df_wisata))), np.zeros(len(df_wisata), dtype=int), 0, 0, [])
+w_bf_data_temp = prepare_budget_first_data(df_wisata, df_wisata["Estimasi_Harga"].values, np.zeros((2,1)), np.zeros((2, len(df_wisata))), np.zeros(len(df_wisata), dtype=int), 0, 0, [])
 
 # ==============================================================================
 # 9. RUNNING THE 7 STRESS-TESTING SCENARIOS SEQUENTIALLY
@@ -865,7 +849,7 @@ w_bf_data = prepare_budget_first_data(df_wisata, df_wisata["Estimasi_Harga"].val
 h_bf_data = prepare_budget_first_data(df_hotel, df_hotel["Estimasi_Harga"].values, h_cntr_bgt, h_u_bgt, h_lbl_bgt, anchor_hotel, h_it_bgt, h_his_bgt)
 k_bf_data = prepare_budget_first_data(df_kuliner, df_kuliner["Estimasi_Harga"].values, k_cntr_bgt, k_u_bgt, k_lbl_bgt, anchor_kuliner, k_it_bgt, k_his_bgt)
 
-pkg_bf_min = get_budget_first_packages(df_wisata, df_hotel, df_kuliner, w_lbl_bgt, h_lbl_bgt, k_lbl_bgt, w_cntr_bgt, h_cntr_bgt, k_cntr_bgt, anchor_wisata, anchor_hotel, anchor_kuliner, RATIO_SCHEMES["B"])
+pkg_bf_min = get_budget_first_packages(df_wisata, df_hotel, df_kuliner, w_lbl_bgt, h_lbl_bgt, k_lbl_bgt, w_cntr_bgt, h_cntr_bgt, k_cntr_bgt, anchor_wisata, anchor_hotel, anchor_kuliner, RATIO_SCHEMES[DEFAULT_SCHEME])
 generate_ranking_excel("1a_BudgetFirst_Termurah_27k.xlsx", "Budget-First (Rp 27.750)", w_bf_data, h_bf_data, k_bf_data, pkg_bf_min)
 
 
@@ -889,7 +873,7 @@ w_bf_data = prepare_budget_first_data(df_wisata, df_wisata["Estimasi_Harga"].val
 h_bf_data = prepare_budget_first_data(df_hotel, df_hotel["Estimasi_Harga"].values, h_cntr_bgt, h_u_bgt, h_lbl_bgt, anchor_hotel, h_it_bgt, h_his_bgt)
 k_bf_data = prepare_budget_first_data(df_kuliner, df_kuliner["Estimasi_Harga"].values, k_cntr_bgt, k_u_bgt, k_lbl_bgt, anchor_kuliner, k_it_bgt, k_his_bgt)
 
-pkg_bf_max = get_budget_first_packages(df_wisata, df_hotel, df_kuliner, w_lbl_bgt, h_lbl_bgt, k_lbl_bgt, w_cntr_bgt, h_cntr_bgt, k_cntr_bgt, anchor_wisata, anchor_hotel, anchor_kuliner, RATIO_SCHEMES["B"])
+pkg_bf_max = get_budget_first_packages(df_wisata, df_hotel, df_kuliner, w_lbl_bgt, h_lbl_bgt, k_lbl_bgt, w_cntr_bgt, h_cntr_bgt, k_cntr_bgt, anchor_wisata, anchor_hotel, anchor_kuliner, RATIO_SCHEMES[DEFAULT_SCHEME])
 generate_ranking_excel("1b_BudgetFirst_Termahal_5M.xlsx", "Budget-First (Rp 5.770.750)", w_bf_data, h_bf_data, k_bf_data, pkg_bf_max)
 
 
@@ -935,7 +919,7 @@ w_ds_data = prepare_dest_first_wisata_data(df_wisata, df_wisata["Estimasi_Harga"
 h_ds_data = prepare_budget_first_data(df_hotel, df_hotel["Estimasi_Harga"].values, h_cntr_dest, h_u_dest, h_lbl_dest, anchor_hotel_dest, h_it_dest, h_his_dest)
 k_ds_data = prepare_budget_first_data(df_kuliner, df_kuliner["Estimasi_Harga"].values, k_cntr_dest, k_u_dest, k_lbl_dest, anchor_kuliner_dest, k_it_dest, k_his_dest)
 
-pkg_ds_3a1 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_min, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES["B"])
+pkg_ds_3a1 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_min, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES[DEFAULT_SCHEME])
 generate_ranking_excel("3a1_DestinationFirst_Termurah_NoBudget.xlsx", "Destination-First (ID 40 Termurah, Rp 1.500.000)", w_ds_data, h_ds_data, k_ds_data, pkg_ds_3a1)
 
 
@@ -954,7 +938,7 @@ w_ds_data = prepare_dest_first_wisata_data(df_wisata, df_wisata["Estimasi_Harga"
 h_ds_data = prepare_budget_first_data(df_hotel, df_hotel["Estimasi_Harga"].values, h_cntr_dest, h_u_dest, h_lbl_dest, anchor_hotel_dest, h_it_dest, h_his_dest)
 k_ds_data = prepare_budget_first_data(df_kuliner, df_kuliner["Estimasi_Harga"].values, k_cntr_dest, k_u_dest, k_lbl_dest, anchor_kuliner_dest, k_it_dest, k_his_dest)
 
-pkg_ds_3a2 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_max, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES["B"])
+pkg_ds_3a2 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_max, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES[DEFAULT_SCHEME])
 generate_ranking_excel("3a2_DestinationFirst_Termahal_NoBudget.xlsx", "Destination-First (ID 159 Termahal, Rp 1.500.000)", w_ds_data, h_ds_data, k_ds_data, pkg_ds_3a2)
 
 
@@ -975,7 +959,7 @@ w_ds_data = prepare_dest_first_wisata_data(df_wisata, df_wisata["Estimasi_Harga"
 h_ds_data = prepare_budget_first_data(df_hotel, df_hotel["Estimasi_Harga"].values, h_cntr_dest, h_u_dest, h_lbl_dest, anchor_hotel_dest, h_it_dest, h_his_dest)
 k_ds_data = prepare_budget_first_data(df_kuliner, df_kuliner["Estimasi_Harga"].values, k_cntr_dest, k_u_dest, k_lbl_dest, anchor_kuliner_dest, k_it_dest, k_his_dest)
 
-pkg_ds_3b1 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_min, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES["B"])
+pkg_ds_3b1 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_min, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES[DEFAULT_SCHEME])
 generate_ranking_excel("3b1_DestinationFirst_Termurah_Budget27k.xlsx", "Destination-First (ID 40 Termurah, Rp 27.750)", w_ds_data, h_ds_data, k_ds_data, pkg_ds_3b1)
 
 
@@ -994,7 +978,7 @@ w_ds_data = prepare_dest_first_wisata_data(df_wisata, df_wisata["Estimasi_Harga"
 h_ds_data = prepare_budget_first_data(df_hotel, df_hotel["Estimasi_Harga"].values, h_cntr_dest, h_u_dest, h_lbl_dest, anchor_hotel_dest, h_it_dest, h_his_dest)
 k_ds_data = prepare_budget_first_data(df_kuliner, df_kuliner["Estimasi_Harga"].values, k_cntr_dest, k_u_dest, k_lbl_dest, anchor_kuliner_dest, k_it_dest, k_his_dest)
 
-pkg_ds_3b2 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_max, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES["B"])
+pkg_ds_3b2 = get_dest_first_packages(df_wisata, df_hotel, df_kuliner, h_lbl_dest, k_lbl_dest, h_cntr_dest, k_cntr_dest, locked_dest_max, anchor_hotel_dest, anchor_kuliner_dest, RATIO_SCHEMES[DEFAULT_SCHEME])
 generate_ranking_excel("3b2_DestinationFirst_Termahal_Budget5M.xlsx", "Destination-First (ID 159 Termahal, Rp 5.770.750)", w_ds_data, h_ds_data, k_ds_data, pkg_ds_3b2)
 
 
